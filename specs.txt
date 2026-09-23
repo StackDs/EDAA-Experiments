@@ -1,0 +1,17 @@
+
+Procesador (CPU): Intel(R) Core(TM) i5-13420H (13ª generación, arquitectura x86_64, Raptor Lake).
+Núcleos / Hilos: 8 núcleos (4 P-cores de alto rendimiento + 4 E-cores de eficiencia) / 12 hilos.
+Frecuencia: Frecuencia base/mínima de 400 MHz, frecuencia máxima turbo de 4.60 GHz (4600 MHz).
+Jerarquía de Caché:
+L1d (datos): 320 KiB.
+L1i (instrucciones): 384 KiB.
+L2: 7 MiB.
+L3 compartida (Intel Smart Cache): 12 MiB.
+Memoria Principal (RAM): 16 GB (15.0 GiB reconocidos por el SO), DDR.
+Almacenamiento Secundario: NVMe SSD 512 GB, modelo WD PC SN740 SDDQNQD-512G-1014 (PCIe Gen4 x4).
+Sistema Operativo y Entorno de Software:
+SO: Arch Linux (Rolling Release).
+Compilador: GCC 16.2.1.
+Dialecto: C++20 (-std=c++20).
+Flags base de optimización: -O3 -march=native.
+

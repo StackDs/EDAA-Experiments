@@ -1,0 +1,69 @@
+# ==============================================================================
+# Artefactos de Compilación C++
+# ==============================================================================
+*.o
+*.obj
+*.so
+*.a
+*.out
+*.exe
+
+# Directorios de compilación y ejecutables específicos
+bin/
+build/
+Boletin_01/benchmarks/bench_search_size
+Boletin_01/benchmarks/bench_search_pos
+Boletin_01/heaps/bench_heaps
+
+# ==============================================================================
+# Archivos de Respaldo y Temporales de Editores / Sistema
+# ==============================================================================
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Configuración de entornos de desarrollo (opcional)
+.vscode/
+.idea/
+
+# ==============================================================================
+# Entorno de Python (Gráficos y Análisis de Datos)
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# ==============================================================================
+# Artefactos de Compilación LaTeX (Informe)
+# ==============================================================================
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.out
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+
+# ==============================================================================
+# Empaquetado final (se genera antes de entregar)
+# ==============================================================================
+*.zip
+*.tar.gz
+*.7z
+
+# NOTA METODOLÓGICA SOBRE LOS DATOS (CSV):
+# No ignoramos la carpeta 'data/*.csv' porque en un estudio científico
+# los datos crudos consolidados deben ser versionados para que los gráficos
+# del informe puedan reproducirse inmediatamente tras clonar el repositorio.

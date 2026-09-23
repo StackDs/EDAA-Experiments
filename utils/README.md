@@ -1,0 +1,118 @@
+# Helpers para realizar experimentos
+
+Cada vez que queremos validar una hipótesis y comparar algoritmos se deben
+realizar experimentos. Estos consumen tiempo y como es una tarea
+repetitiva les ofrecemos soluciones precisas y estándares para estas.
+
+## Tiempo
+
+En [uhr](./uhr.cpp) (reloj, en alemán) está un cronómetro configurable
+que reporta _tiempo promedio y desviación estándar_ para un set de tests.
+
+### Compilación
+
+```bash
+g++ uhr.cpp -std=c++11 -O0 -o uhr
+```
+
+Se pueden usar versiones más nuevas de C++ (14, 17, 20), pero NO anteriores
+a C++11. Se debe usar `-O0` para que el compilador no optimice el loop en
+donde se realiza la medición de tiempo. Así que se recomienda programar
+usando técnicas de optimización como hoisting para evitar recalcular en
+ciclos.
+
+### Uso
+
+```bash
+./uhr <filename>.csv <runs> <lower> <upper> <step>
+```
+
+Donde `<filename>` es el nombre de archivo donde se escribirán los resultados.
+El archivo no debe existir previamente y debe tener extensión `.csv`. Los
+siguientes argumentos describen las pruebas, todos deben ser positivos e
+indican cuántas repeticiones por prueba, límites inferior y superior y
+el salto prueba a prueba, respectivamente.
+
+Se recomienda que `<runs>` sea al menos igual a 32, esto para poder tener
+los caches en caliente y poder tener suficientes muestras para confianza
+estadística. Yo tiendo a hacer 256 repeticiones si es que es permisivo esto
+en tiempo, en caso contrario uso 64 y si es que cada experimento se demora
+alrededor de un segundo es que uso 32.
+
+Se recomienda que se deben escoger unidades de tiempo que sean significativas:
+es decir si todo se ejecuta rápidamente, usar nanosegundos, si se demora un
+poco más, usar micro segundos, luego milisegundos... En este sentido es bueno
+tener nombres de archivos _semánticos_. Yo uso: elemento probado + _ + unidad
+de tiempo. Así los CSVs se describen solos, se puede saber qué información
+contienen y en qué unidades está.
+
+## Espacio
+Si se quiere medir el crecimiento del espacio utilizado por una estructura de datos, usando [groesse](./groesse.cpp) (en alemán la palabra Größe es tamaño, groesse es una forma equivalente de escribirlo sin ö y sin ß) y [valgrind_parser](./valgrind_parser.py) es posible. 
+La lógica es la siguiente, dentro de [groesse](./groesse.cpp) utilizamos algún método para agregar valores (insert, push_back, push, etc) de la EDD que queremos analizar.
+
+### Compilación
+
+```bash
+ g++ groesse.cpp -O0 -g -o groesse
+```
+
+Se debe usar la versión de C++ que sea necesaria para la EDD que se quiere medir. Se debe usar `-O0` para que el compilador no optimice el loop donde la estructura va creciendo en tamaño. Se debe usar la flag -g ya que con esta Valgrind puede acceder a información de debugging.
+
+### Uso
+
+Al momento de ejecutar hacemos lo siguiente:
+
+```bash
+valgrind --tool=massif ./groesse
+```
+Haciendo esto, le decimos a Valgrind que varias veces durante la ejecución del código calcule cuanta memoria se ha utilizado. Eso nos servirá para tener un archivo del estilo [n, size].
+
+Cuando el código termine de ejecutarse, obtendremos un archivo llamado `massif.out.<pid>` donde `<pid>`es el número del proceso. Este archivo tendrá mucha información que no necesitamos y es complicada de interpretar. Aquí es donde entra [valgrind_parser](./valgrind_parser.py). Dentro de este código deben cambiar el `<pid>` por el que quieren parsear y poner algún nombre para el CSV en el que guardaran los datos.
+
+Después de todo este proceso, obtendrán un lindo CSV con el formato [n, size], con el que podrán realizar gráficos.
+
+## Tablas
+
+En [csvltx](https://github.com/leonardlover/csvltx) hay una herramienta que
+ayuda al parsing de archivos CSV en formato de tabla para uso en LaTeX.
+
+Para poder ejecutarla, deben tener [Rust](https://www.rust-lang.org) instalado,
+en particular `cargo` y simplemente deben clonar el repositorio y hacer
+```bash
+cargo run <filename> <unit>
+```
+
+Donde `<filename>` es el archivo CSV que fue escrito por uhr y `<unit>` es
+la unidad de los datos del CSV. Esto imprimirá en la consola el texto que
+hay que copiar en el archivo LaTeX para mostrar la tabla.
+
+Tambien existe una alternativa en Python usando Pandas, que es
+[`to_latex`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_latex.html),
+el uso de este requiere cargar el CSV como DataFrame y usar el paquete `booktabs`
+en LaTeX, así que la alternativa en Rust funciona puramente en la terminal y no
+requiere adiciones a LaTeX.
+
+## Gráficos
+
+Se recomienda usar [pgfplots](https://ctan.org/pkg/pgfplots?lang=en) o
+[matplotlib](https://matplotlib.org) para hacer los gráficos, especialmente la
+primera opción. Esto pues todo el pipeline anterior se integra muy bien pues
+pgfplots puede hacer un gráfico directamente de un CSV.
+
+Ver [ejemplo](./ejemplo.tex) para ver la sintáxis de creación de gráficos normales,
+semi-log y log-log para distintos CSVs.
+
+## Ejemplos
+
+En `experimental_data` se encuentran algunos CSV generados con
+uhr y también se presenta un [ejemplo](./ejemplo.pdf) para que se vean qué tal
+quedan los gráficos y tablas usando los procesos recomendados.
+
+---
+
+## Referencia y Atribución de Origen
+
+* **Autor original:** Leonardo Lovera (LELE) — Ayudante del curso Estructuras de Datos y Algoritmos Avanzados (2026-2).
+* **Profesor a cargo:** José Fuentes.
+* **Repositorio oficial de origen:** [https://github.com/jfuentess/edaa/tree/main/experimentos](https://github.com/jfuentess/edaa/tree/main/experimentos)
+* **Fecha de importación:** Septiembre de 2026.
