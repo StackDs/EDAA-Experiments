@@ -97,8 +97,9 @@ Se adopta como referencia el código `uhr.cpp` de la cátedra, introduciendo cua
    * **Experimento 2 (Posición $k$ variable, $n$ fijo):** Se fija $n$ en $10^7$ (o $10^6$) y se aplica paso aditivo sobre el índice $k$ en percentiles de $0\%$ a $100\%$ (saltos uniformes de $2\%$ o $5\%$).
 3. **Aislamiento Estricto del Cronómetro:**  
    La generación del vector y la selección de la clave a buscar se realizan estrictamente **fuera** de la ventana temporal delimitada por `begin_time` y `end_time`.
-4. **Métricas Registradas:**  
-   El arnés exporta a CSV: $n$ (o $k$), media muestral (`t_mean`), desviación estándar muestral insesgada con corrección de Bessel $N-1$ (`t_stdev`) y los cuartiles de Tukey (`t_Q0` a `t_Q4`).
+4. **Métricas Registradas y Tamaño Muestral ($N = 128$):**  
+   El arnés exporta a CSV: $n$ (o $k$), media muestral (`t_mean`), desviación estándar muestral insesgada con corrección de Bessel $N-1$ (`t_stdev`) y los cuartiles de Tukey (`t_Q0` a `t_Q4`).  
+   Se adopta formalmente $N = 128$ repeticiones ($2^7$) superando el piso mínimo de 32 de la cátedra. Esto reduce el error estándar de la media ($\text{SEM} = \sigma / \sqrt{128} \approx \sigma / 11.31$, reducción del $50\%$ del margen de error respecto a $N=32$), garantiza particiones enteras exactas de 32 datos por cuartil, y disuelve la influencia de cualquier interrupción espuria del sistema operativo.
 
 ---
 
@@ -106,6 +107,15 @@ Se adopta como referencia el código `uhr.cpp` de la cátedra, introduciendo cua
 
 * **Implementaciones Oficiales:** Descarga directa de `binary_heap.hpp` y `binomial_heap.hpp` del repositorio oficial (`https://github.com/jfuentess/edaa/tree/main/heaps`).
 * **Principio de Integridad Hipotética:** Se formulan hipótesis previas e inmutables sobre el rendimiento temporal de cada operación (`insert`, `extract_min`, `merge`, `top`). Si los datos empíricos contradicen la hipótesis teórica (por ejemplo, si la unión del heap binomial es penalizada por asignación dinámica y *cache misses* respecto al heap binario), **la hipótesis se conserva intacta** y se conjeturan las razones arquitectónicas en el informe.
+* **Gestión de Memoria y RAII en Heap Binomial (Corrección Crítica de Fuga):**  
+  El código base de la cátedra carecía de destructor (`delete`), lo que provocaba fugas acumuladas de más de $5\text{ GB}$ de RAM al ejecutar 128 repeticiones para $n = 10^6$. Se introdujo formalmente:
+  1. Destructor `~binomial_heap()` y método `clear()` con liberación recursiva post-orden de nodos (`freeTree`).
+  2. Liberación explícita del nodo mínimo extraído en `extractMin` (`delete temp`).
+  3. Deshabilitación de copia (`delete` en constructor de copia y operador de asignación) para prevenir *double-free* por punteros compartidos.
+  4. Semántica de movimiento (*Move Semantics*) y transferencia de posesión en `meld` (`h.roots.clear()`) para garantizar que la unión de árboles en $\mathcal{O}(\log n)$ transfiera la titularidad de los punteros sin peligro de desreferenciación dangling ni doble liberación.
+  5. Optimización de la operación `top`: Al ser de solo lectura, el heap se preconstruye una sola vez por tamaño fuera del bucle de 128 corridas, reduciendo la presión sobre el asignador de memoria a solo $\approx 32\text{ MB}$ planos.
+* **Aislamiento de Núcleo (Taskset en P-Core):**  
+  Todos los scripts de ejecución fijan la afinidad de CPU mediante `taskset -c 2` hacia el P-Core 2 del Intel Core i5-13420H, neutralizando por completo el ruido del planificador y previniendo caídas de rendimiento por migración hacia E-Cores.
 
 ---
 
@@ -113,26 +123,31 @@ Se adopta como referencia el código `uhr.cpp` de la cátedra, introduciendo cua
 
 ```text
 EDAA-Experiments/
-├── DECISIONES_METODOLOGICAS.md  <-- Bitácora de diseño y justificación científica
+├── DECISIONES_METODOLOGICAS.md  <-- Bitacora de diseno y justificacion cientifica
 ├── specs.txt                    <-- Especificaciones de hardware del sistema
+├── utils/                       <-- Utilidades de catedra (uhr.cpp, quartile_nth.cpp, etc.)
 └── Boletin_01/                  <-- Directorio autocontenido para aguirre_bryan_01.zip
-    ├── Makefile                 <-- Automatización de compilación (-O3, C++20)
+    ├── Makefile                 <-- Automatizacion de compilacion (-O3, C++20) y corridas
+    ├── bin/                     <-- Binarios compilados (bench_search_size, bench_search_pos, bench_heaps)
+    ├── include/
+    │   ├── generator.hpp        <-- Generador monotono determinista en O(n)
+    │   ├── search/              <-- Cabeceras de busqueda (secuencial, binaria, galopante)
+    │   └── heaps/               <-- binary_heap, binomial_heap y agregador heaps.hpp
     ├── src/
-    │   ├── search.hpp           <-- 6 algoritmos de búsqueda (propios y STL)
-    │   └── generator.hpp        <-- Generador monótono determinista en O(n)
-    ├── benchmarks/
     │   ├── bench_search_size.cpp <-- Experimento 1 (n variable)
-    │   └── bench_search_pos.cpp  <-- Experimento 2 (k variable, n fijo)
-    ├── heaps/
-    │   ├── binary_heap.hpp      <-- Heap binario del curso comentado
-    │   ├── binomial_heap.hpp    <-- Heap binomial del curso comentado
-    │   └── bench_heaps.cpp      <-- Benchmark de operaciones de heaps
+    │   ├── bench_search_pos.cpp  <-- Experimento 2 (k variable, n fijo)
+    │   └── bench_heaps.cpp       <-- Experimento 3 (Heaps: 5 operaciones)
+    ├── benchmarks/              <-- Scripts de orquestacion Bash
+    │   ├── run_search_size.sh   <-- Ejecucion Experimento 1
+    │   ├── run_search_pos.sh    <-- Ejecucion Experimento 2
+    │   ├── run_heaps.sh         <-- Ejecucion Experimento 3
+    │   └── run_all.sh           <-- Ejecucion suite completa
     ├── data/                    <-- Archivos CSV de salida
-    ├── plots/
-    │   └── plot_boletin01.py    <-- Generador de gráficos con barras de error
-    └── report/
-        ├── main.tex             <-- Documento LaTeX (5 a 15 páginas)
-        └── references.bib       <-- Bibliografía
+    │   ├── search_size/         <-- 6 CSVs de busqueda por tamano
+    │   ├── search_pos/          <-- 6 CSVs de busqueda por posicion
+    │   └── heaps/               <-- 10 CSVs de operaciones de heaps
+    ├── plots/                   <-- Scripts Python y graficos generados
+    └── report/                  <-- Documento LaTeX (5 a 15 paginas)
 ```
 
 ---
@@ -256,3 +271,105 @@ Se justificó y documentó formalmente por qué la contraparte de búsqueda bina
 
 3. **Cero Sobrecarga y Simetría de Contrato:**
    * Al invocar directamente `std::lower_bound`, el benchmark accede al algoritmo de bisección puro sin pagar la sobrecarga de una comparación extra para convertir el resultado a booleano, y permite obtener la posición mediante aritmética de punteros en $O(1)$ (`std::distance`), manteniendo paridad contractual absoluta con las implementaciones manuales.
+
+---
+
+## 5.1 ARQUITECTURA Y CICLO DE VIDA DE `bench_search_size.cpp` (EXPERIMENTO 1)
+
+Se diseñó e implementó el ejecutable experimental para estudiar la escalabilidad temporal en función del tamaño de entrada ($n$):
+
+1. **Reutilización del Núcleo de `utils/uhr.cpp`:**
+   * Se preserva la función de visualización de progreso en terminal `display_progress(u, v)`.
+   * Se adopta la función `quartiles(times, q)` para el cómputo de los cinco números de Tukey ($Q_0, Q_1, Q_2, Q_3, Q_4$).
+   * Se preserva el cálculo de la media muestral ($\mu$) y de la desviación estándar insesgada con corrección de Bessel ($\sigma$ sobre $N - 1$).
+   * Se mantiene el encabezado canónico de salida: `n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4`.
+
+2. **Diferenciación y Mejoras Metodológicas frente a `uhr.cpp`:**
+   * **Selector de Algoritmo por Argumentos (CLI):** El ejecutable parametriza la variante a medir (`seq`, `seq_stl`, `bin`, `bin_stl`, `gal`, `gal_stl`) mediante argumentos de línea de comandos, desacoplando la lógica de medición de la recompilación del binario.
+   * **Paso Multiplicativo ($n \leftarrow n \times \text{factor}$):** Para abarcar órdenes de magnitud entre $10^3$ y $10^7$, se implementa avance multiplicativo (por defecto duplicación: $\times 2.0$), generando una densidad uniforme de puntos sobre escalas logarítmicas.
+   * **Aislamiento Estricto del Setup:** La generación del vector mediante `generar_vector<int64_t>(n, seed)` y la precomputación determinista de las claves de consulta $k_i \in [0, n-1]$ ocurren **fuera** de la ventana cronometrada por `std::chrono::high_resolution_clock::now()`.
+   * **Condición de Consulta Justa (Caso Promedio):** Las claves consultadas varían en cada una de las 32 repeticiones utilizando una semilla fija reproducible (`11223344ULL + n`), asegurando que todos los algoritmos evalúen exactamente el mismo conjunto de consultas.
+   * **Barrera Inline contra Dead-Code Elimination:** Se añade `asm volatile("" : : "r,m"(res) : "memory");` para permitir compilar con `-O3 -march=native` sin que el optimizador elimine las llamadas a las funciones de búsqueda.
+   * **Validación de Corrección:** Se introduce `assert(res == target_indices[i])` tras el cronómetro para garantizar formalmente que la medición corresponde a una búsqueda exitosa en la posición esperada.
+
+---
+
+## 5.2 DETALLE Y JUSTIFICACIÓN DEL PARSEO DE LÍNEA DE COMANDOS (CLI) FRENTE A `uhr.cpp`
+
+En `utils/uhr.cpp` original, la función `validate_input` procesaba 5 argumentos fijos (`argc == 6`), obligando a *hardcodear* la función a probar dentro del código y restringiendo el avance únicamente a pasos aditivos enteros (`std::stoll`).
+
+### Justificación de las Modificaciones en el Arnés:
+1. **Inclusión del Selector de Algoritmo (`argv[1]`):**
+   * En lugar de recompilar el programa 6 veces para cada algoritmo, se pasa como argumento un identificador textual (`seq`, `seq_stl`, `bin`, `bin_stl`, `gal`, `gal_stl`).
+   * La función `parse_algorithm` mapea este texto hacia un `enum class Algorithm`, permitiendo ejecutar barridos automatizados en scripts de Bash con un solo binario.
+2. **Paso Multiplicativo con Decimales (`std::stod`):**
+   * En el Experimento 1 (Tamaño $n$), evaluar de $10^3$ a $10^7$ mediante incrementos aditivos generaría miles de puntos innecesarios o saltos desproporcionados que omitirían los órdenes de magnitud inferiores.
+   * Al parametrizar `step_factor` como un número decimal con `std::stod` (ej. `2.0` para duplicar), el tamaño progresa exponencialmente ($1000 \to 2000 \to 4000 \dots$), generando datos equidistantes en escala semilogarítmica y log-log.
+3. **Mapeo para el Experimento de Posición (`bench_search_pos.cpp`):**
+   * En el Experimento 2, la variable independiente no es $n$ sino $k$ (la posición del elemento).
+   * La firma de entrada se adapta a:
+     `./bin/bench_search_pos <ALGO> <CSV_SALIDA> <RUNS> <SIZE_N> <LOWER_K> <UPPER_K> <STEP_K>`
+   * El vector de tamaño fijo $n$ se genera **una sola vez fuera de todos los bucles**, ahorrando gigabytes de asignaciones repetitivas de memoria. Para abarcar exactamente del $0\%$ al $100\%$ sin truncamiento de frontera, se fija $N = 10\,000\,001$ con $k \in [0, 10\,000\,000]$ y paso $\Delta k = 500\,000$, produciendo exactamente 21 percentiles equidistantes ($0\%, 5\%, 10\%, \dots, 100\%$).
+
+---
+
+## 5.3 CALIBRACIÓN Y JUSTIFICACIÓN ARQUITECTÓNICA DE LOS RANGOS DE ENTRADA (INPUT SIZES)
+
+Se analizó y fundamentó formalmente la dimensionalidad de las entradas para cada experimento, determinando por qué los rangos seleccionados son óptimos y por qué ampliarlos no incrementa la fiabilidad científica:
+
+### A. Experimento 1 (Búsqueda por Tamaño: $n \in [10^3, 10^7]$)
+1. **Recorrido Integral de la Jerarquía de Memoria del Hardware:**
+   En el procesador del sistema experimental (Intel Core i5-13420H), el tamaño en memoria del arreglo de enteros (`int64_t`, 8 bytes) atraviesa todos los estratos físicos de almacenamiento:
+   * **$n = 10^3$ ($8\text{ KB}$):** Reside íntegramente en la **Caché L1 de datos** (48 KB por P-Core). Acceso con latencia inferior a $1\text{ ns}$.
+   * **$n = 10^4 - 10^5$ ($80\text{ KB} - 800\text{ KB}$):** Desborda L1 pero reside completamente en la **Caché L2** (1.25 MB por P-Core).
+   * **$n = 10^6$ ($8\text{ MB}$):** Desborda L2 y reside en la **Caché L3 compartida** (Smart Cache de 12 MB).
+   * **$n = 10^7$ ($80\text{ MB}$):** Desborda masivamente la memoria caché L3 (12 MB), forzando al controlador de memoria a realizar transferencias de líneas de caché (*cache line fills*) desde la **memoria principal RAM DDR**.
+2. **Inutilidad de Expandir a $n \ge 10^8$ ($800\text{ MB}$):**
+   * Superar $10^7$ elementos no expone ningún nivel jerárquico de memoria nuevo (continúa siendo RAM DDR).
+   * Incrementa en un orden de magnitud la latencia de asignación e I/O, aumentando la carga térmica sostenida sobre el procesador y el riesgo de *thermal throttling* en la laptop, sin aportar información asintótica adicional.
+3. **Amplitud Asintótica:** El rango cubre **4 órdenes de magnitud** ($10^3, 10^4, 10^5, 10^6, 10^7$), estándar universal para discriminar rigurosamente pendientes lineales ($\mathcal{O}(n)$) de logarítmicas ($\mathcal{O}(\log n)$) en escalas log-log con coeficientes de correlación $R^2 > 0.999$.
+
+### B. Experimento 2 (Búsqueda por Posición: $k \in [0, 10^7]$ con $N = 10^7 + 1$)
+1. **Aislamiento del Peor Caso Absoluto ($100\%$):**
+   Al fijar $N = 10\,000\,001$ con $\Delta k = 500\,000$, se evalúan exactamente 21 percentiles equidistantes ($0\%, 5\%, 10\%, \dots, 95\%, 100\%$).
+2. **Densidad Óptima:** 21 puntos garantizan una interpolación lineal perfecta en búsqueda secuencial y capturan con alta definición el codo logarítmico temprano de la búsqueda galopante ($\mathcal{O}(\log k)$).
+
+### C. Experimento 3 (Colas de Prioridad: Heaps con $n \in [10^3, 10^6]$)
+1. **Límite Natural por Punteros Dinámicos:**
+   A diferencia del Binary Heap (vector plano continuo de $4\text{ MB}$ a $n = 10^6$), el Binomial Heap reserva $10^6$ nodos individuales dispersos en el heap del sistema operativo mediante `new Node` ($\approx 32\text{ MB}$ por instancia).
+2. **Prevención de Saturación de Memoria:**
+   Evaluar hasta $n = 10^6$ cubre 3 órdenes de magnitud suficientes para evidenciar la divergencia entre $\mathcal{O}(n)$ y $\mathcal{O}(n \log n)$ en la construcción, y entre $\mathcal{O}(n)$ y $\mathcal{O}(\log n)$ en la fusión (*meld*), sin desbordar el asignador de memoria (`glibc malloc`). 
+---
+## 6. METODOLOGÍA DE VISUALIZACIÓN CIENTÍFICA Y ESTRUCTURA DE CONTRASTES
+### A. Rechazo de la Gráfica Única Sobrecargada (*Plot Cluttering*)
+En versiones iniciales de evaluación algorítmica, graficar simultáneamente los 6 algoritmos de búsqueda en un único lienzo introduce severas distorsiones visuales y analíticas:
+1. **Colapso de escala por dominancia lineal:** La búsqueda secuencial ($\mathcal{O}(n)$) alcanza más de $5\text{ ms} = 5\,000\,000\text{ ns}$ en $n = 10^7$, comprimiendo a $0$ a las búsquedas binaria y galopante ($\approx 30 - 800\text{ ns}$).
+2. **Ocultamiento de diferencias sutiles en escalas logarítmicas:** Aunque una escala log-log permite visualizar simultáneamente $\mathcal{O}(n)$ y $\mathcal{O}(\log n)$, la proximidad de 6 curvas superpuestas oculta el impacto del diseño de bajo nivel (p. ej., bifurcación de 3 ramas en `binary_search_custom` vs. bisección pura de 1 rama en `std::lower_bound`).
+### B. Estructura y Taxonomía Modular por Experimento
+La generación gráfica se organiza estrictamente en tres módulos independientes con almacenamiento segregado en subdirectorios (`plots/Experimento_1_Size/`, `plots/Experimento_2_Posicion/`, `plots/Experimento_3_Heaps/`):
+
+1. **Experimento 1: Variación por Tamaño de Secuencia ($n$):**
+   * **Contraste 1 a 1 (Cada búsqueda vs. su equivalente en la STL):**
+     * Secuencial: `seq` vs `seq_stl` (`std::find`). Escala adecuada en $\mu\text{s}$ para evidenciar paridad de compilación vectorial.
+     * Binaria: `bin` vs `bin_stl` (`std::lower_bound`). Eje en $\text{ns}$, contrastando 3 ramas vs 1 rama.
+     * Galopante: `gal` vs `gal_stl`. Eje en $\text{ns}$, analizando bisección manual vs iteradores de la STL.
+   * **Contraste entre Algoritmos Custom (Propios):**
+     * Panorámica General: `seq` vs `bin` vs `gal` (Escala Log-Log para contrastar $\mathcal{O}(n)$, $\mathcal{O}(\log n)$ y $\mathcal{O}(\log k)$).
+     * Detalle Sublineal: `bin` vs `gal` (Escala lineal en $\text{ns}$).
+
+2. **Experimento 2: Variación por Posición del Objetivo ($k$):**
+   * **Contraste 1 a 1 (Cada búsqueda vs. su equivalente en la STL):**
+     * Secuencial: `seq` vs `seq_stl` (`std::find`). Eje en $\text{ms}$ en función de $k/n$ ($0\%$ a $100\%$).
+     * Binaria: `bin` vs `bin_stl` (`std::lower_bound`). Eje en $\text{ns}$ mostrando invariancia posicional.
+     * Galopante: `gal` vs `gal_stl`. Eje en $\text{ns}$ mostrando aceleración en posiciones tempranas.
+   * **Contraste entre Algoritmos Custom (Propios):**
+     * Panorámica General: `seq` vs `bin` vs `gal` (Escala Log-Y vs $k$).
+     * Detalle Sublineal: `bin` vs `gal` (Escala lineal en $\text{ns}$, evidenciando el cruce en $k$ temprano).
+
+3. **Experimento 3: Colas de Prioridad (Heaps):**
+   * Se evalúan las 5 operaciones fundamentales (`build`, `top`, `insert`, `extract_min`, `meld`), contrastando directamente `binary_heap` (vectorial continuo STL) frente a `binomial_heap` (bosque de árboles dinámicos con punteros).
+
+### C. Tratamiento Riguroso de Barras de Error y Límites Físicos
+* **Acotamiento Inferior al Cero Físico:** En experimentos donde la varianza muestral es alta debido a interrupciones del kernel o fallos de caché (`t_stdev > t_mean`), las barras de error simétricas estándar penetran en tiempos negativos ($\le 0\text{ ns}$), lo cual es físicamente imposible.
+* **Solución Implementada:** La función `get_clamped_yerr` acota el extremo inferior del error a $\min(\mu, \sigma)$ y fija `ax.set_ylim(bottom=0)` en escalas lineales, manteniendo la fidelidad estadística del percentil superior sin violar la causalidad temporal física.
+* **Exportación Exclusiva a PNG (300 DPI):** Las figuras se exportan directamente en formato rasterizado `.png` a 300 DPI (alta resolución) sin generar archivos `.pdf` redundantes, resultando suficiente para la inspección y análisis visual de los experimentos. Si se requiriera exportación vectorial en PDF en el futuro, el arnés dispone del flag opcional `--pdf`.
