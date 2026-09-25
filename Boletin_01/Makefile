@@ -7,7 +7,7 @@ BENCH_DIR = benchmarks
 
 TARGETS = $(BIN_DIR)/bench_search_size $(BIN_DIR)/bench_search_pos $(BIN_DIR)/bench_heaps
 
-.PHONY: all clean clean_data clean_plots run_search_size run_search_pos run_heaps run_all directories plot plot_exp1 plot_exp2 plot_exp3 plot_search plot_heaps
+.PHONY: all clean clean_data clean_plots run_search_size run_search_pos run_heaps run_all directories plot plot_exp1 plot_exp2 plot_exp3 plot_search plot_heaps report clean_report
 
 all: directories $(TARGETS)
 
@@ -71,3 +71,13 @@ clean_data:
 
 clean_plots:
 	rm -rf plots/*.png plots/*.pdf plots/experimento_* plots/Experimento_*
+
+TECTONIC = /home/stack/.local/bin/tectonic
+
+
+report:
+	@cd report && $(TECTONIC) Boletin01.tex
+	@echo "\033[0;32m[Compilacion] PDF generado exitosamente en report/Boletin01.pdf\033[0m"
+
+clean_report:
+	rm -f report/*.pdf report/*.out report/*.log report/*.aux

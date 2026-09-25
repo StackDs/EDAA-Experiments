@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# run_all.sh: Orquestador maestro para ejecutar todas las baterias del Boletin 01
-# (Busqueda tamano, Busqueda posicion y Heaps).
+
 
 set -euo pipefail
 
@@ -19,8 +18,8 @@ echo -e "================================================================\033[0m
 echo -e "\033[1;36m[Fase 1/4] Compilando binarios optimizados (-O3 -march=native)...\033[0m"
 make -C "$BASE_DIR" all
 
-# 2. Experimento de Busqueda: Tamano
-echo -e "\n\033[1;36m[Fase 2/4] Ejecutando Experimento 1 (Busqueda por Tamano n)...\033[0m"
+# 2. Experimento de Busqueda: size
+echo -e "\n\033[1;36m[Fase 2/4] Ejecutando Experimento 1 (Busqueda por size n)...\033[0m"
 bash "$BENCH_DIR/run_search_size.sh"
 
 # 3. Experimento de Busqueda: Posicion
