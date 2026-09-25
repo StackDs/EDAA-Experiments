@@ -112,7 +112,6 @@ quedan los gráficos y tablas usando los procesos recomendados.
 
 ## Referencia y Atribución de Origen
 
-* **Autor original:** Leonardo Lovera (LELE) — Ayudante del curso Estructuras de Datos y Algoritmos Avanzados (2026-2).
-* **Profesor a cargo:** José Fuentes.
+* **Autor original:** Leonardo Lovera — Ayudante del curso Estructuras de Datos y Algoritmos Avanzados (2026-2).
 * **Repositorio oficial de origen:** [https://github.com/jfuentess/edaa/tree/main/experimentos](https://github.com/jfuentess/edaa/tree/main/experimentos)
 * **Fecha de importación:** Septiembre de 2026.

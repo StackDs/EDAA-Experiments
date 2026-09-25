@@ -12,6 +12,7 @@
 \usepackage{xcolor}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{float}
 \usepackage[T1]{fontenc}
 \usepackage{fancyhdr}
 \setlength{\emergencystretch}{2em}
@@ -346,12 +347,14 @@ Los algoritmos de búsqueda fueron desarrollados como implementaciones propias (
         A[0] = \text{rand}(1, \text{step\_max}), \quad A[i] = A[i-1] + \text{rand}(1, \text{step\_max}) \quad (\Delta \ge 1)
     \end{equation}
     utilizando el motor pseudoaleatorio Mersenne Twister de 64 bits (\texttt{std::mt19937\_64}) con semilla fija determinista. Este esquema garantiza matemáticamente orden ascendente estricto y unicidad de claves por construcción en tiempo lineal $\mathcal{O}(n)$, eliminando la sobrecarga computacional de ordenar con \texttt{std::sort} ($\mathcal{O}(n \log n)$).
+
+    \textbf{Nota:} Si bien la búsqueda secuencial no impone restriccion de orden, los demás algoritmos si requieren trabajar sobre secuencias ordenadas. Por tanto, para mantener la simetría experimental, todas las secuencias fueron generadas bajo el mismo esquema de ordenamiento, manteniendo así la igualdad de condiciones para cada escenario de prueba. 
     
     \item \textbf{Invarianza de distribución (Modelo de Knuth):} Conforme al modelo de árbol de decisión de Donald Knuth \cite{demaine2020}, los algoritmos de búsqueda basados en comparación pura ($<, ==$) son formalmente invariantes ante la distribución métrica de las claves; el número de comparaciones depende exclusivamente del rango del índice $k$ y del tamaño $n$. Se descartó el uso de distribuciones gaussianas dado que la alta concentración de valores en $[\mu \pm \sigma]$ genera colisiones masivas de duplicados, forzando mecanismos de filtrado que desvirtúan la distribución.
     
     \item \textbf{Dominio de tipos entero (\texttt{std::int64\_t}):} Se restringió el dominio experimental estrictamente a enteros con signo de 64 bits, descartando tipos de punto flotante (\texttt{float}, \texttt{double}). Esto previene fenómenos de absorción numérica del estándar IEEE 754 (donde la mantisa de un \texttt{float} pierde resolución unitera a partir de $2^{24} \approx 1.6 \times 10^7$ elementos), asegurando comparaciones de igualdad exacta en la ALU con latencia de un ciclo de reloj.
     
-    \item \textbf{Arnés de medición (\texttt{uhr}) y aislamiento temporal:} Se utilizó la plantilla de ultra alta resolución \textbf{\texttt{uhr}} provista por la ayudantía (\textit{Leonardo Lovera - LELE}) \cite{jfuentess_edaa}. La generación del vector y la selección de claves de consulta se realizaron estrictamente fuera de la ventana cronometrada por el reloj de alta resolución.
+    \item \textbf{Arnés de medición (\texttt{uhr}) y aislamiento temporal:} Se utilizó la plantilla de ultra alta resolución \textbf{\texttt{uhr}} provista por la ayudantía (\textit{Leonardo Lovera - LELE}, \url{https://github.com/leonardlover}) \cite{lovera_github, jfuentess_edaa}. La generación del vector y la selección de claves de consulta se realizaron estrictamente fuera de la ventana cronometrada por el reloj de alta resolución.
     
     \item \textbf{Tratamiento estadístico (128 repeticiones):} Para cada punto experimental se ejecutaron $M = 128$ repeticiones independientes. Conforme al Teorema del Límite Central, este volumen reduce el error estándar de la media ($\text{SEM} = \sigma / \sqrt{128}$) a valores despreciables y garantiza particiones enteras exactas de 32 datos por cuartil.
     
@@ -437,7 +440,7 @@ En lugar de un barrido unitario ($k = 0, 1, 2, \dots, 10^7$) ---el cual resultar
 \paragraph{Hipótesis.}
 Se espera que la búsqueda secuencial presente una relación estrictamente proporcional a $k$, creciendo linealmente con la posición del objetivo. La búsqueda binaria debería mostrarse invariante respecto a la posición, ya que siempre parte desde el punto medio. La búsqueda galopante debería exhibir tiempos mínimos en posiciones cercanas al inicio ($k \ll N$), superando incluso a la binaria, dado que su complejidad $\mathcal{O}(\log k)$ se traduce en pocos saltos exponenciales cuando $k$ es pequeño.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \includegraphics[width=\textwidth]{../plots/Experimento_2_Posicion/fig_pos_seq_vs_stl.png}
@@ -473,6 +476,7 @@ Se espera que la búsqueda secuencial presente una relación estrictamente propo
     \item \textbf{Galopante (Fig.~\ref{fig:pos_bin_gal}):} Registra tiempos mínimos en posiciones iniciales ($k/N \le 5\%$, $\approx 31\text{--}90\text{ ns}$). A partir de posiciones medias ($k/N \approx 25\%\text{--}60\%$), los tiempos aumentan y superan a la búsqueda binaria ($\approx 200\text{--}350\text{ ns}$ vs $\approx 35\text{--}48\text{ ns}$). En el extremo final ($k/N > 85\%$), la galopante vuelve a descender ($\approx 60\text{--}71\text{ ns}$), ya que el galope se detiene rápidamente al exceder el tamaño del arreglo.
 \end{itemize}
 
+\newpage
 
 \subsubsection{Experimento 3: Colas de Prioridad (Heaps)}
 
@@ -482,7 +486,7 @@ Se contrastaron las cinco operaciones fundamentales entre Binary Heap y Binomial
 \paragraph{Hipótesis.}
 Se espera que el Binary Heap supere al Binomial Heap en las operaciones individuales (\texttt{top}, \texttt{insert}, \texttt{extract\_min} y \texttt{build}) debido a su representación contigua en memoria, la cual maximiza la localidad espacial y el aprovechamiento de la caché del procesador. La excepción debería ser la operación de fusión (\texttt{meld}), donde el Binomial Heap, al operar mediante manipulación de punteros en tiempo $\mathcal{O}(\log n)$, debería exhibir una clara superioridad frente a la reconstrucción lineal $\mathcal{O}(n)$ del Binary Heap.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \includegraphics[width=\textwidth]{../plots/Experimento_3_Heaps/fig_heaps_build.png}
@@ -499,7 +503,7 @@ Se espera que el Binary Heap supere al Binomial Heap en las operaciones individu
     \label{fig:exp3_heaps_batch}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \includegraphics[width=\textwidth]{../plots/Experimento_3_Heaps/fig_heaps_insert.png}
@@ -549,6 +553,8 @@ A partir de los resultados empíricos obtenidos y contrastados con el análisis 
     \item \textbf{Criterios de selección bajo condiciones específicas:}
     \begin{itemize}
         \item \textit{Búsqueda en secuencias:} Si se garantiza que la clave objetivo reside predominantemente en las posiciones iniciales de la secuencia ($k \le 2\%$ del total), es preferible utilizar la \textbf{Búsqueda Galopante} sobre la Binaria, alcanzando reducciones de tiempo de hasta $6\times$ en ese régimen. En caso contrario, si las consultas son uniformes o se distribuyen hacia el final del arreglo ($k > 2\%$), es preferible usar la \textbf{Búsqueda Binaria}.
+        
+        La \textit{Búsqueda Secuencial} no es particularmente recomendable en ningún escenario, al tener un costo lineal $\mathcal{O}(n)$ que la hace ineficiente frente a las alternativas logarítmicas. Sin embargo cabe recalcar que esta sigue ganando en otros entornos, como por ejemplo cuando se trabaja con secuencias no ordenadas, ya que de los algoritmos estudiados es el único que no requiere ordenamiento previo.
         \item \textit{Colas de prioridad:} Si la aplicación realiza la operación de fusión (\texttt{meld}) con alta frecuencia, es imperativo utilizar el \textbf{Binomial Heap} sobre el Binary Heap, ya que garantiza un costo $\mathcal{O}(\log n)$ frente a la reconstrucción completa $\mathcal{O}(n)$ del vector contiguo. En caso contrario (si predominan \texttt{insert}, \texttt{top} y \texttt{extract\_min}), se debe preferir el \textbf{Binary Heap}.
         \item \textit{Restricción de memoria:} Si se requiere operar en sistemas con memoria restrictiva o entornos de alta concurrencia de caché, se debe emplear el \textbf{Binary Heap}. Si la memoria no es un factor limitante y se requiere unir dinámicamente múltiples colas de prioridad concurrentes, se debe adoptar el \textbf{Binomial Heap}.
     \end{itemize}
@@ -570,6 +576,12 @@ jfuentess. (s. f.).
 avanzados} [Código fuente].
 GitHub.
 \url{https://github.com/jfuentess/edaa}
+
+\bibitem{lovera_github}
+Lovera, L. (s. f.).
+\textit{Herramientas y arneses de experimentación estadística para EDAA} [Código fuente].
+GitHub.
+\url{https://github.com/leonardlover}
 
 \bibitem{barbay2007}
 Barbay, J., López-Ortiz, A., Lu, T., \& Salinger, A. (2007).
@@ -619,9 +631,7 @@ En \textit{Working draft, standard for programming language C++}.
 \endgroup
 
 \subsection{Usos Específicos}
-Las implementaciones de referencia y las rutinas de medición
-de tiempo se tomaron del repositorio del curso
-\cite{jfuentess_edaa}.
+Las implementaciones de referencia y las rutinas de medición de tiempo se tomaron del repositorio del curso \cite{jfuentess_edaa} y de las herramientas del ayudante Leonardo Lovera (\url{https://github.com/leonardlover}) \cite{lovera_github}.
 
 El código fuente desarrollado, los scripts de automatización del banco de pruebas y los datasets generados para este boletín se encuentran alojados en el repositorio de reproducibilidad del proyecto: \url{https://github.com/StackDs/EDAA-Experiments}.
 
