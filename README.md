@@ -91,15 +91,15 @@ Para garantizar reproducibilidad científica estricta, todos los experimentos fu
 - **Python:** Python 3.10+ con `matplotlib`, `numpy` y `pandas`.
 - **LaTeX:** Compilador `tectonic` instalado en el path de usuario.
 
-### Compilación y Ejecución (Boletín 01)
+### Compilación y Ejecución (Boletín 0X)
 ```bash
 # Navegar a la carpeta del boletín
-cd Boletin_01
+cd Boletin_0X
 
 # Compilar todos los ejecutables de benchmark (-O3 -march=native)
 make all
 
-# Ejecutar la batería completa de experimentos (Búsqueda por tamaño, posición y Heaps)
+# Ejecutar la batería completa de experimentos 
 make run_all
 
 # Generar todos los gráficos estadísticos en la carpeta plots/
