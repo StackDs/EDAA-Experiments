@@ -2,13 +2,14 @@ CXX = g++
 CXXFLAGS = -std=c++20 -O3 -march=native -Wall -Wextra -Werror -pedantic -Iinclude
 PYTHON ?= $(if $(wildcard ../.venv/bin/python3),$(abspath ../.venv/bin/python3),python3)
 PLOT_ARGS ?=
+TECTONIC ?= tectonic
 
 BIN_DIR = bin
 BENCH_DIR = benchmarks
 TARGET = $(BIN_DIR)/bench_trees
 HEADERS = $(wildcard include/trees/*.h include/utils/*.h)
 
-.PHONY: all run_basic_ops run_distributions run_all plot clean
+.PHONY: all run_basic_ops run_distributions run_all plot report clean
 
 all: $(TARGET)
 
@@ -24,11 +25,14 @@ run_basic_ops: all
 run_distributions: all
 	bash $(BENCH_DIR)/run_distributions.sh
 
-run_all:
+run_all: all
 	bash $(BENCH_DIR)/run_all.sh
 
 plot:
 	$(PYTHON) plots/plot_boletin02.py $(PLOT_ARGS)
+
+report:
+	cd report && $(TECTONIC) Boletin02.tex
 
 clean:
 	rm -f $(TARGET)

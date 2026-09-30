@@ -124,8 +124,3 @@ make report
 
 Esta serie de experimentos fue desarrollado exclusivamente con fines académicos para el estudio de Estructura de Datos y Algoritmos Avanzados, diseño de experimentos, el análisis de rendimiento algorítmico y estadistica descriptiva.
 
-**Laboratorio Experimental de Estructuras de Datos y Algoritmos Avanzados**  
-*Universidad de Concepción — Departamento de Ingeniería Informática y Ciencias de la Computación (DIICC)*   
-**Autor:** Bryan Eliseo Aguirre Fuentes  
-**Docente:** Dr. José Fuentes  
-**Ayudante:** Leonardo Lovera — GitHub: [leonardlover](https://github.com/leonardlover)  
