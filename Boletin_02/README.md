@@ -1,18 +1,16 @@
 # Boletín 02: Árboles de Búsqueda Binaria y Estructuras Autoajustables
 
-**Curso:** Estructuras de Datos y Algoritmos Avanzados (2026-2)  
-**Institución:** Universidad de Concepción — DIICC  
-**Estudiante:** Bryan Eliseo Aguirre Fuentes (Matrícula: 2024443402)  
-**Ayudante:** Leonardo Lovera (LELE) — GitHub: [leonardlover](https://github.com/leonardlover)  
+**Reporte Completo:** pendiente; el directorio `report/` aún no contiene un informe.
 
 ---
 
 ## Objetivos del Boletín
 
-Este boletín está dedicado a la investigación experimental y comparativa de estructuras de búsqueda jerárquica:
-1. **Árbol Binario de Búsqueda Clásico (BST):** Sin balanceo, susceptible a degeneración lineal ante secuencias ordenadas ($\mathcal{O}(n)$).
-2. **Árbol AVL:** Estructura rígidamente balanceada mediante rotaciones basadas en factores de equilibrio ($\Delta h \in \{-1, 0, 1\}$), garantizando altura logarítmica estricta ($\mathcal{O}(\log n)$).
-3. **Árbol Splay (Splay Tree):** Estructura autoajustable no balanceada en el peor caso, pero con garantía de complejidad amortizada $\mathcal{O}(\log n)$ mediante la operación `splay` (rotaciones Zig, Zig-Zig y Zig-Zag), optimizada para explotar el principio de localidad temporal de accesos.
+Este boletín compara tres implementaciones de árboles de búsqueda que reciben las mismas claves y las mismas secuencias de operaciones:
+
+1. **Árbol AVL:** Mantiene el equilibrio mediante rotaciones y garantiza búsqueda, inserción y eliminación en $\mathcal{O}(\log n)$ en el peor caso.
+2. **Árbol Rojo-Negro mediante `std::set`:** Sirve como referencia de la biblioteca estándar. En la implementación de `g++` usada aquí, `std::set` se basa en un árbol Rojo-Negro.
+3. **Árbol Splay:** Reorganiza el árbol después de cada búsqueda para estudiar el efecto de consultar repetidamente un subconjunto de claves.
 
 ---
 
@@ -20,41 +18,79 @@ Este boletín está dedicado a la investigación experimental y comparativa de e
 
 ```text
 Boletin_02/
-├── README.md                       # Este archivo
+├── Makefile                        # Compilación y objetivos de ejecución
+├── README.md
 ├── benchmarks/                     # Scripts de ejecución automatizada
-├── data/                           # Datos de experimentación
-│   ├── basic_ops/                  # Tiempos de inserción, búsqueda y eliminación
-│   ├── splay_distributions/        # Desempeño bajo distribuciones Uniforme, Zipf y Gaussiana
-│   └── splay_locality/             # Pruebas de acceso con ventana deslizante y 80/20
-├── include/                        # Código fuente
-│   ├── trees/                      # Implementaciones de BST, AVL y Splay Tree
-│   └── utils/                      # Utilidades de generación de claves y rotaciones
-├── plots/                          # Visualizaciones gráficas
-├── report/                         # Manuscrito y reporte en LaTeX
-└── src/                            # Binarios y programas conductores (Drivers)
+│   ├── run_all.sh                  # Compila y ejecuta toda la batería
+│   ├── run_basic_ops.sh            # Inserción y vaciado completo D0
+│   └── run_distributions.sh        # Búsqueda y eliminación D1 de Splay
+├── data/                           # Resultados experimentales en CSV
+│   ├── basic_ops/                  # Inserción y vaciado completo de los tres árboles
+│   ├── splay_distributions/        # Búsquedas uniforme/binomial negativa y D1 de Splay
+│   └── splay_locality/             # Reservado; no participa en la batería actual
+├── include/                        # Implementaciones y funciones auxiliares en C++
+│   ├── trees/
+│   │   ├── avl_tree.h
+│   │   ├── red_black_tree.h
+│   │   └── splay_tree.h
+│   └── utils/
+│       ├── tree_sequences.h       # Población y orden de eliminación; usa el generador del Boletín 1
+│       ├── discrete_queries.h     # Generación de consultas
+│       └── tree_benchmark.h        # Inserción, búsqueda y eliminación por lotes
+├── plots/
+│   └── plot_boletin02.py           # Gráficos a partir de los CSV
+├── report/                         # Reservado para el informe
+└── src/
+    └── bench_trees.cpp             # Conductor y medición mediante uhr
 ```
 
 ---
 
-## Baterías Experimentales Previstas
+## Resumen de los Experimentos
 
-1. **Operaciones Básicas en Escenario Equilibrado vs Degenerado:**
-   - Inserción secuencial vs aleatoria.
-   - Evaluación de la altura alcanzada y costo de rebalanceo (rotaciones AVL vs splaying).
-2. **Sensibilidad a la Distribución de Consultas:**
-   - Comparación bajo accesos con distribución Uniforme vs distribución Sesgada (Zipfiana/Pareto).
-   - Demostración empírica de la propiedad de tiempo de trabajo (*Working Set Property*) del Splay Tree.
-3. **Localidad Temporal de Accesos:**
-   - Evaluación de patrones de consulta con alta concentración temporal (consultas repetidas en un subconjunto reducido de claves calientes).
+La batería usa ocho tamaños ($n = 10^3, 2\cdot10^3, \ldots, 128\cdot10^3$), 64 repeticiones por tamaño, afinidad al núcleo 2 y una pausa de dos segundos entre series. Cada repetición genera las claves únicas $1, \ldots, n$ y las baraja. Las semillas dependen solo de $n$ y del número de repetición, de modo que los tres árboles reciben los mismos datos. La generación queda fuera del intervalo medido. Los CSV contienen tiempo medio por operación en nanosegundos, desviación estándar y cuartiles.
+
+### 1. Experimento 1: Inserción variando el tamaño ($n$)
+
+- **Dominio:** $n \in \{10^3, 2\cdot10^3, \ldots, 128\cdot10^3\}$.
+- **Condición:** Insertar las $n$ claves barajadas en un árbol inicialmente vacío.
+- **Árboles evaluados:** AVL, Rojo-Negro (`std::set`) y Splay; tres CSV en `data/basic_ops/`.
+
+### 2. Experimento 2: Búsqueda bajo dos distribuciones
+
+- **Dominio:** Los mismos ocho tamaños y tres árboles; seis CSV en `data/splay_distributions/`.
+- **Condición uniforme:** Cada consulta elige una de las claves presentes con igual probabilidad.
+- **Condición binomial negativa:** Se barajan las claves para asignarles un rango de popularidad. Cada consulta genera ese rango con una binomial negativa de parámetros $r=2$ y $p=3/(0{,}05n+3)$. Si el rango supera $n-1$, se vuelve a sortear. Esta elección concentra aproximadamente el 80 % de las consultas en el primer 5 % de los rangos, que corresponde a claves presentes elegidas al azar.
+- **Medición:** Primero se ejecutan $5n$ consultas de preparación fuera del reloj; luego se mide un vector nuevo de $10n$ consultas. Las consultas pueden repetir claves, pero la población inicial contiene claves únicas.
+
+### 3. Experimento 3: Vaciado completo y eliminación tras consultas
+
+- **Vaciado D0:** En los tres árboles se insertan las mismas $n$ claves y luego se eliminan todas en el mismo orden barajado. Se mide el tiempo medio por clave eliminada y se comprueba que el árbol quede vacío. Produce tres CSV en `data/basic_ops/` y un gráfico comparativo de los tres árboles.
+- **Eliminación D1:** Solo en Splay se ejecutan antes las consultas uniformes o binomiales negativas del Experimento 2. Después se mide el vaciado completo. Produce dos CSV en `data/splay_distributions/`.
+
+En total se generan **14 CSV** con las operaciones y distribuciones descritas arriba.
 
 ---
 
-## Referencias
+## Comandos de Compilación y Ejecución
 
-1. **Adelson-Velsky, G. M., & Landis, E. M.** (1962). *An algorithm for the organization of information*. Soviet Mathematics Doklady.
-2. **Sleator, D. D., & Tarjan, R. E.** (1985). *Self-adjusting binary search trees*. Journal of the ACM (JACM), 32(3), 652–686.
-3. **Cátedra EDAA UdeC:** Repositorio oficial y guías metodológicas ([https://github.com/jfuentess/edaa](https://github.com/jfuentess/edaa)).
-4. **Ayudantía EDAA:** Perfil de herramientas y utilidades ([https://github.com/leonardlover](https://github.com/leonardlover)).
-5. **Implementación AVL:** Agarwal, A. *AgAVLTree*. Se adaptaron la organización recursiva de inserción/eliminación y los cuatro casos de rebalanceo LL, LR, RL y RR en [`avl_tree.h`](include/trees/avl_tree.h). Licencia MIT; el aviso de copyright y licencia se conserva en el header. ([Repositorio](https://github.com/Aditya-A-garwal/AgAVLTree), [`src/AgAVLTree.h`](https://github.com/Aditya-A-garwal/AgAVLTree/blob/main/src/AgAVLTree.h)).
-6. **Implementación Splay:** Gaztanaga, I. *Boost.Intrusive*, `splaytree_algorithms.hpp`. La secuencia de rotaciones bottom-up (Zig, Zig-Zig y Zig-Zag) se adaptó a nodos propietarios en [`splay_tree.h`](include/trees/splay_tree.h). Licencia Boost Software License 1.0; se conserva el aviso de licencia y la atribución original incluidos en el header. ([Repositorio](https://github.com/boostorg/intrusive), [archivo fuente](https://github.com/boostorg/intrusive/blob/develop/include/boost/intrusive/splaytree_algorithms.hpp)).
-7. **Implementación Rojo-Negro:** GCC Project. *GNU libstdc++*, `stl_set.h` y `stl_tree.h`. [`red_black_tree.h`](include/trees/red_black_tree.h) adapta la interfaz de `std::set`; en libstdc++ esta estructura se representa mediante un árbol Rojo-Negro. ([Repositorio GCC](https://github.com/gcc-mirror/gcc), [`stl_set.h`](https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_set.h), [`stl_tree.h`](https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_tree.h)). El estándar de C++ garantiza las operaciones y complejidades asociativas, pero no exige que `std::set` use una estructura Rojo-Negro ([borrador del estándar, `set`](https://eel.is/c%2B%2Bdraft/set.overview)).
+Desde el directorio `Boletin_02/`:
+
+| Comando | Acción |
+| :--- | :--- |
+| `make all` | Compila `bin/bench_trees` con `g++`, C++20 y `-O3 -march=native`. |
+| `make run_all` | Ejecuta la batería completa de los tres experimentos. |
+| `make run_basic_ops` | Ejecuta inserción y vaciado D0 en los tres árboles. |
+| `make run_distributions` | Ejecuta las búsquedas y los D1 de Splay. |
+| `make plot` | Genera los gráficos a partir de los CSV disponibles. |
+| `make clean` | Elimina el binario `bin/bench_trees`. |
+
+Los valores predeterminados pueden cambiarse mediante `RUNS`, `LOWER`, `UPPER`, `STEP`, `CPU_CORE`, `PAUSE_SECONDS` y `DATA_ROOT`. Repetir una serie sobrescribe su CSV; los archivos de otras series permanecen.
+
+---
+
+## Documentación de Módulos
+
+- [AVL](include/trees/avl_tree.h)
+- [Rojo-Negro](include/trees/red_black_tree.h)
+- [Splay](include/trees/splay_tree.h).

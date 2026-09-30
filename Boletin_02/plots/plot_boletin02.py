@@ -22,9 +22,7 @@ ESTILOS = {
 }
 ESTILOS_DISTRIBUCION = {
     "uniforme": {"color": "#1f77b4", "marker": "o"},
-    "sesgada": {"color": "#d95f02", "marker": "s"},
-    "geometrica": {"color": "#2ca02c", "marker": "^"},
-    "poisson": {"color": "#9467bd", "marker": "D"},
+    "binomial_negativa": {"color": "#d95f02", "marker": "s"},
 }
 FASES = {"insercion": "Inserción", "busqueda": "Búsqueda", "eliminacion": "Eliminación"}
 ESCENARIOS = {"general": "", "d0": "sin consultas previas", "d1": "tras las consultas"}
@@ -72,6 +70,8 @@ def reconocer_fase(valor):
 
 def reconocer_distribucion(valor):
     texto = normalizar(valor)
+    if "negative_binomial" in texto or "binomial_negativa" in texto:
+        return "binomial_negativa"
     if "geometr" in texto or "geometric" in texto:
         return "geometrica"
     if "poisson" in texto:
@@ -166,6 +166,12 @@ def cargar_datos(rutas):
     if not filas:
         return pd.DataFrame()
     datos = pd.DataFrame(filas)
+    datos = datos[
+        datos["distribucion"].isin(("uniforme", "binomial_negativa", "sin_especificar"))
+        & ~((datos["escenario"] == "d1") & (datos["arbol"] != "Splay"))
+    ]
+    if datos.empty:
+        return datos
     claves = ["n", "arbol", "fase", "distribucion", "escenario", "tipo", "tamano_inicial"]
     duplicadas = datos.duplicated(claves, keep=False)
     if duplicadas.any():
@@ -222,7 +228,10 @@ def graficar_por_tamano(datos, salida, pdf, fases):
         for arbol, serie in grupo.groupby("arbol"):
             dibujar_serie(eje, serie, "n", arbol, ESTILOS[arbol])
         detalle = f" ({ESCENARIOS[escenario]})" if escenario != "general" else ""
-        titulo = f"{FASES[fase]}{detalle} — {distribucion.replace('_', ' ')}"
+        if fase == "eliminacion" and escenario == "d0":
+            titulo = "Vaciado completo del árbol (D0): AVL, Rojo-Negro y Splay"
+        else:
+            titulo = f"{FASES[fase]}{detalle} — {distribucion.replace('_', ' ')}"
         configurar_ejes(eje, titulo, "Número de claves (n)", x_log=True)
         ruta = salida / "por_tamano" / f"fig_{fase}_{escenario}_{distribucion}.png"
         guardar(figura, ruta, pdf)

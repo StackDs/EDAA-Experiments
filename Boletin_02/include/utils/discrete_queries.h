@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include "tree_sequences.h"
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -26,36 +25,15 @@ std::vector<key> generar_consultas_uniformes(const std::vector<key> &claves,
 
 
 template <std::integral key>
-std::vector<key> generar_consultas_sesgadas(const GruposClaves<key> &grupos,
-                                            std::size_t cantidad,
-                                            double probabilidad_frecuentes,
-                                            std::uint64_t seed) {
-  std::mt19937_64 gen(seed);
-  std::bernoulli_distribution elegir_grupo(probabilidad_frecuentes);
-  std::uniform_int_distribution<std::size_t> elegir_frecuente(
-      0, grupos.frecuentes.size() - 1);
-  std::uniform_int_distribution<std::size_t> elegir_otra(
-      0, grupos.otras.size() - 1);
-  std::vector<key> consultas;
-  consultas.reserve(cantidad);
-
-  for (std::size_t i = 0; i < cantidad; ++i) {
-    if (elegir_grupo(gen)) {
-      consultas.push_back(grupos.frecuentes[elegir_frecuente(gen)]);
-    } else {
-      consultas.push_back(grupos.otras[elegir_otra(gen)]);
-    }
-  }
-  return consultas;
-}
-
-template <std::integral key>
 std::vector<key>
-generar_consultas_geometricas(const std::vector<key> &popularidad,
-                              std::size_t cantidad, double p,
-                              std::uint64_t seed) {
+generar_consultas_binomiales_negativas(const std::vector<key> &popularidad,
+                                      std::size_t cantidad,
+                                      std::uint64_t seed) {
   std::mt19937_64 gen(seed);
-  std::geometric_distribution<std::size_t> elegir_rango(p);
+  const double claves_frecuentes =
+      0.05 * static_cast<double>(popularidad.size());
+  const double p = 3.0 / (claves_frecuentes + 3.0);
+  std::negative_binomial_distribution<std::size_t> elegir_rango(2, p);
   std::vector<key> consultas;
   consultas.reserve(cantidad);
 

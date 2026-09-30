@@ -35,7 +35,7 @@ void validate_input(int argc, char *argv[], std::string &tree_name,
            " <UPPER> <STEP>\n"
         << "  TREE:         avl | red_black | splay\n"
         << "  OP:           insert | search | erase | erase_after_search\n"
-        << "  DISTRIBUTION: none | uniform | biased | geometric\n"
+        << "  DISTRIBUTION: none | uniform | negative_binomial\n"
         << "  RUNS:         repeticiones por tamano, minimo 4\n"
         << "  STEP:         factor multiplicativo, minimo 2\n";
     std::exit(EXIT_FAILURE);
@@ -57,8 +57,8 @@ void validate_input(int argc, char *argv[], std::string &tree_name,
   }
   const bool usa_consultas =
       op_name == "search" || op_name == "erase_after_search";
-  if (usa_consultas && distribution != "uniform" && distribution != "biased" &&
-      distribution != "geometric") {
+  if (usa_consultas && distribution != "uniform" &&
+      distribution != "negative_binomial") {
     std::cerr << "Esta operacion necesita una distribucion de consultas.\n";
     std::exit(EXIT_FAILURE);
   }
@@ -76,8 +76,7 @@ void validate_input(int argc, char *argv[], std::string &tree_name,
     std::cerr << "RUNS, LOWER, UPPER y STEP deben ser enteros.\n";
     std::exit(EXIT_FAILURE);
   }
-  if (runs < 4 || lower <= 0 || lower > upper || step < 2 ||
-      (usa_consultas && distribution != "uniform" && lower < 20)) {
+  if (runs < 4 || lower <= 0 || lower > upper || step < 2) {
     std::cerr << "Parametros fuera del rango del experimento.\n";
     std::exit(EXIT_FAILURE);
   }
@@ -121,21 +120,16 @@ void quartiles(std::vector<double> &data, std::vector<double> &q) {
   }
 }
 
-// Devuelve consultas preparadas para una de las tres distribuciones.
+// Devuelve consultas preparadas para uno de los dos patrones de acceso.
 std::vector<std::int64_t>
 preparar_consultas(const std::vector<std::int64_t> &claves,
                    const std::vector<std::int64_t> &popularidad,
-                   const GruposClaves<std::int64_t> &grupos,
                    const std::string &distribution, std::size_t cantidad,
                    std::uint64_t seed) {
   if (distribution == "uniform") {
     return generar_consultas_uniformes(claves, cantidad, seed);
   }
-  if (distribution == "biased") {
-    return generar_consultas_sesgadas(grupos, cantidad, 0.8, seed);
-  }
-  return generar_consultas_geometricas(
-      popularidad, cantidad, 20.0 / static_cast<double>(claves.size()), seed);
+  return generar_consultas_binomiales_negativas(popularidad, cantidad, seed);
 }
 
 // Repite una fase para un tipo de arbol. La generacion queda fuera del reloj.
@@ -178,9 +172,8 @@ void run_tree_benchmark(const std::string &tree_name,
     fase = "eliminacion_d1_total";
   }
   const std::string distribucion_csv = distribution == "uniform"  ? "uniforme"
-                                       : distribution == "biased" ? "sesgada"
-                                       : distribution == "geometric"
-                                           ? "geometrica"
+                                       : distribution == "negative_binomial"
+                                           ? "binomial_negativa"
                                            : "sin_especificar";
 
   std::cout << "Midiendo " << tree_name << " / " << op_name << " / "
@@ -213,11 +206,13 @@ void run_tree_benchmark(const std::string &tree_name,
       }
 
       if (op_name == "search" || op_name == "erase_after_search") {
-        auto popularidad = claves;
-        barajar_claves(popularidad, seed + 1);
-        const auto grupos = asignar_claves_frecuentes(claves, 0.05, seed + 1);
+        std::vector<std::int64_t> popularidad;
+        if (distribution == "negative_binomial") {
+          popularidad = claves;
+          barajar_claves(popularidad, seed + 1);
+        }
         const auto preparacion =
-            preparar_consultas(claves, popularidad, grupos, distribution,
+            preparar_consultas(claves, popularidad, distribution,
                                static_cast<std::size_t>(5 * n), seed + 2);
         const std::size_t aciertos_preparacion =
             ejecutar_consultas(arbol, preparacion);
@@ -226,7 +221,7 @@ void run_tree_benchmark(const std::string &tree_name,
           std::exit(EXIT_FAILURE);
         }
         consultas =
-            preparar_consultas(claves, popularidad, grupos, distribution,
+            preparar_consultas(claves, popularidad, distribution,
                                static_cast<std::size_t>(10 * n), seed + 3);
         if (op_name == "search") {
           operaciones = consultas.size();
