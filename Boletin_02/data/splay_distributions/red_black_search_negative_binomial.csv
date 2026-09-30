@@ -1,0 +1,9 @@
+n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4,arbol,fase,distribucion
+1000,90.7042,21.7725,63.2314,75.3023,83.0932,99.1073,155.002,red_black,busqueda,binomial_negativa
+2000,105.009,26.202,73.8605,84.8759,94.2356,118.482,178.385,red_black,busqueda,binomial_negativa
+4000,132.743,34.2189,95.476,109.673,121.182,141.984,222.999,red_black,busqueda,binomial_negativa
+8000,169.274,36.5008,123.051,141.295,157.85,202.027,280.042,red_black,busqueda,binomial_negativa
+16000,222.454,26.7227,169.631,205.307,227.284,241.459,276.632,red_black,busqueda,binomial_negativa
+32000,286.277,23.2376,237.336,268.541,285.413,300.614,357.482,red_black,busqueda,binomial_negativa
+64000,417.615,25.8181,382.791,395.593,410.603,437.293,491.898,red_black,busqueda,binomial_negativa
+128000,611.453,15.5484,571.452,601.061,609.135,619.513,661.163,red_black,busqueda,binomial_negativa

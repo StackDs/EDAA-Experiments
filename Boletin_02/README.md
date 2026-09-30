@@ -26,7 +26,7 @@ Boletin_02/
 │   └── run_distributions.sh        # Búsqueda y eliminación D1 de Splay
 ├── data/                           # Resultados experimentales en CSV
 │   ├── basic_ops/                  # Inserción y vaciado completo de los tres árboles
-│   ├── splay_distributions/        # Búsquedas uniforme/binomial negativa y D1 de Splay
+│   ├── splay_distributions/        # Búsquedas uniforme/sesgada y D1 de Splay
 │   └── splay_locality/             # Reservado; no participa en la batería actual
 ├── include/                        # Implementaciones y funciones auxiliares en C++
 │   ├── trees/
@@ -56,17 +56,17 @@ La batería usa ocho tamaños ($n = 10^3, 2\cdot10^3, \ldots, 128\cdot10^3$), 64
 - **Condición:** Insertar las $n$ claves barajadas en un árbol inicialmente vacío.
 - **Árboles evaluados:** AVL, Rojo-Negro (`std::set`) y Splay; tres CSV en `data/basic_ops/`.
 
-### 2. Experimento 2: Búsqueda bajo dos distribuciones
+### 2. Experimento 2: Búsqueda bajo distribucion
 
 - **Dominio:** Los mismos ocho tamaños y tres árboles; seis CSV en `data/splay_distributions/`.
 - **Condición uniforme:** Cada consulta elige una de las claves presentes con igual probabilidad.
-- **Condición binomial negativa:** Se barajan las claves para asignarles un rango de popularidad. Cada consulta genera ese rango con una binomial negativa de parámetros $r=2$ y $p=3/(0{,}05n+3)$. Si el rango supera $n-1$, se vuelve a sortear. Esta elección concentra aproximadamente el 80 % de las consultas en el primer 5 % de los rangos, que corresponde a claves presentes elegidas al azar.
+- **Condición sesgada:** El 80 % de las consultas elige entre el 5 % de claves frecuentes; el 20 % restante elige entre las demás.
 - **Medición:** Primero se ejecutan $5n$ consultas de preparación fuera del reloj; luego se mide un vector nuevo de $10n$ consultas. Las consultas pueden repetir claves, pero la población inicial contiene claves únicas.
 
 ### 3. Experimento 3: Vaciado completo y eliminación tras consultas
 
 - **Vaciado D0:** En los tres árboles se insertan las mismas $n$ claves y luego se eliminan todas en el mismo orden barajado. Se mide el tiempo medio por clave eliminada y se comprueba que el árbol quede vacío. Produce tres CSV en `data/basic_ops/` y un gráfico comparativo de los tres árboles.
-- **Eliminación D1:** Solo en Splay se ejecutan antes las consultas uniformes o binomiales negativas del Experimento 2. Después se mide el vaciado completo. Produce dos CSV en `data/splay_distributions/`.
+- **Eliminación D1:** Solo en Splay se ejecutan antes las consultas uniformes o sesgadas del Experimento 2. Después se mide el vaciado completo. Produce dos CSV en `data/splay_distributions/`.
 
 En total se generan **14 CSV** con las operaciones y distribuciones descritas arriba.
 

@@ -1,0 +1,9 @@
+n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4,arbol,fase,distribucion
+1000,547.13,173.245,372.384,413.126,467.533,633.472,1063.91,splay,eliminacion_d1_total,uniforme
+2000,554.388,161.376,357.71,432.87,501.595,618.984,972.546,splay,eliminacion_d1_total,uniforme
+4000,588.784,149.268,416.939,478.927,540.719,671.658,1018.44,splay,eliminacion_d1_total,uniforme
+8000,680.776,216.787,451.481,527.639,599.892,763.913,1452.77,splay,eliminacion_d1_total,uniforme
+16000,767.939,185.256,543.728,614.276,698.773,906.406,1215.82,splay,eliminacion_d1_total,uniforme
+32000,978.912,183.441,652.881,821.158,993.177,1119.89,1329.18,splay,eliminacion_d1_total,uniforme
+64000,1178.38,127.601,972.473,1080.63,1157.03,1271.2,1447.74,splay,eliminacion_d1_total,uniforme
+128000,1499.31,93.499,1291.86,1448.98,1497.26,1574.95,1712.99,splay,eliminacion_d1_total,uniforme

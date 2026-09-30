@@ -228,7 +228,9 @@ def graficar_por_tamano(datos, salida, pdf, fases):
         for arbol, serie in grupo.groupby("arbol"):
             dibujar_serie(eje, serie, "n", arbol, ESTILOS[arbol])
         detalle = f" ({ESCENARIOS[escenario]})" if escenario != "general" else ""
-        if fase == "eliminacion" and escenario == "d0":
+        if fase == "insercion":
+            titulo = "Inserción de claves barajadas"
+        elif fase == "eliminacion" and escenario == "d0":
             titulo = "Vaciado completo del árbol (D0): AVL, Rojo-Negro y Splay"
         else:
             titulo = f"{FASES[fase]}{detalle} — {distribucion.replace('_', ' ')}"

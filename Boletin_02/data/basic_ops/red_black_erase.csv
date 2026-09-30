@@ -1,0 +1,9 @@
+n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4,arbol,fase,distribucion
+1000,227.794,74.3067,181.583,183.833,188.576,237.753,485.356,red_black,eliminacion_d0_total,sin_especificar
+2000,222.577,41.0389,183.333,194.025,201.178,241.481,305.89,red_black,eliminacion_d0_total,sin_especificar
+4000,258.77,45.8369,200.808,227.173,235.002,304.286,350.2,red_black,eliminacion_d0_total,sin_especificar
+8000,273.364,56.8632,210.743,228.847,254.089,291.586,415.302,red_black,eliminacion_d0_total,sin_especificar
+16000,327.81,84.8627,242.362,268.448,298.38,343.574,625.899,red_black,eliminacion_d0_total,sin_especificar
+32000,429.757,107.955,291.579,333.607,386.681,524.353,675.196,red_black,eliminacion_d0_total,sin_especificar
+64000,545.467,84.0891,379.487,474.627,556.446,619.908,699.767,red_black,eliminacion_d0_total,sin_especificar
+128000,777.545,64.4994,651.136,743.369,768.716,806.337,1005,red_black,eliminacion_d0_total,sin_especificar
