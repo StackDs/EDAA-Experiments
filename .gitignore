@@ -67,3 +67,6 @@ venv/
 # No ignoramos la carpeta 'data/*.csv' porque en un estudio científico
 # los datos crudos consolidados deben ser versionados para que los gráficos
 # del informe puedan reproducirse inmediatamente tras clonar el repositorio.
+
+# Bóveda Obsidian local de Boletín 03
+/Boletin_03/obsidian/

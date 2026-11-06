@@ -1,0 +1,70 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true,linkcolor=blue!70!black,urlcolor=blue!70!black}
+\setlength{\headheight}{14pt}
+\setlength{\emergencystretch}{2em}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsl{Boletín 03: String Matching}}
+\fancyhead[R]{\small\textsl{Bryan Aguirre F. --- Mat. 2024443402}}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.42\textwidth]{logo_udec.png}\\[1.0cm]
+    {\scshape\Large Universidad de Concepción\par}
+    \vspace{0.3cm}
+    {\large Facultad de Ingeniería\par}
+    {Departamento de Ingeniería Informática y Ciencias de la Computación\par}
+    \vspace{2cm}
+    {\Large Estructuras de Datos y Algoritmos Avanzados (2026-2)\par}
+    \vspace{1cm}
+    \rule{\linewidth}{0.6mm}\par
+    \vspace{0.4cm}
+    {\huge\bfseries Boletín 03: String Matching\par}
+    \vspace{0.4cm}
+    \rule{\linewidth}{0.6mm}\par
+    \vspace{1.5cm}
+    \begin{minipage}[t]{0.48\textwidth}
+        \raggedright
+        \textbf{Autor:}\\
+        Bryan Eliseo Aguirre Fuentes\\[0.3cm]
+        \textbf{Matrícula:}\\
+        2024443402
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \raggedleft
+        \textbf{Profesor:}\\
+        Dr. José Fuentes\\[0.3cm]
+        \textbf{Ayudante:}\\
+        Leonardo Lovera
+    \end{minipage}
+    \vfill
+    {Concepción, Chile\\\today\par}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01_introduccion}
+\clearpage
+\input{sections/02_fundamentos}
+
+\end{document}

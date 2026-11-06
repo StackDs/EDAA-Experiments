@@ -1,0 +1,34 @@
+\section{Resumen}
+\subsection{Propósito y alcance del estudio}
+
+Este estudio compara experimentalmente cuatro métodos de búsqueda de patrones
+en texto: búsqueda por fuerza bruta, Suffix Array,
+Knuth--Morris--Pratt (KMP) y Rabin--Karp. La fuerza bruta se incluye como
+\textbf{línea base} para contextualizar el desempeño de los métodos estudiados.
+Para efectos de los experimentos, \textit{búsqueda} significa encontrar y
+contar todas las ocurrencias del patrón en el texto, no devolver sus posiciones.
+Se analiza cómo influyen el largo del texto, el largo del patrón y el número de
+ocurrencias en el tiempo de búsqueda; además, se consideran el costo de
+construcción del índice y el consumo de memoria. Los resultados se interpretan
+junto con las complejidades teóricas para identificar los escenarios en que
+conviene cada alternativa.
+
+\subsection{Estructuras y algoritmos estudiados}
+
+\textbf{Fuerza bruta:} Revisa cada posición posible del texto y compara desde
+allí los caracteres con el patrón. No requiere preprocesamiento y sirve como
+referencia sencilla, aunque puede repetir comparaciones.
+
+\textbf{Suffix Array:} Ordena las posiciones iniciales de los sufijos del
+texto. Para buscar un patrón, localiza mediante búsqueda binaria el intervalo
+de sufijos que comienza con él y cuenta sus ocurrencias. Su índice requiere
+una etapa de construcción previa.
+
+\textbf{KMP:} Busca el patrón recorriendo el texto y usando información de prefijos del
+patrón para evitar comparaciones repetidas. Su búsqueda tiene tiempo lineal en
+el largo del texto y del patrón, sin requerir un índice persistente.
+
+\textbf{Rabin--Karp:} Compara primero valores hash del patrón y de ventanas del texto;
+cuando coinciden, verifica los caracteres para confirmar la ocurrencia. El
+hash de las ventanas se actualiza incrementalmente y su desempeño depende,
+entre otros factores, de las colisiones.

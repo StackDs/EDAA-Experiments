@@ -1,0 +1,119 @@
+\section{Análisis teórico}
+
+Sea \(T\) el texto y \(P\) el patrón. Denotamos sus longitudes por
+\(n = |T|\) y \(m = |P|\), respectivamente. Excluimos el patrón vacío
+(\(m = 0\)), cuyo número de coincidencias depende de la convención adoptada.
+Analizamos el caso usual \(1 \leq m \leq n\); si \(m > n\), las implementaciones devuelven cero
+inmediatamente. Por \textit{búsqueda} entendemos contar todas las ocurrencias,
+incluidas las superpuestas. Usamos notación \(O(\cdot)\) para expresar cotas
+superiores y \(\Theta(\cdot)\) cuando la cota es ajustada. El espacio se expresa
+en palabras y no incluye la entrada. Como los métodos devuelven un contador, el
+espacio de salida es \(O(1)\); si devolvieran todas las posiciones, habría que
+sumar \(O(z)\), donde \(z\) es el número de ocurrencias.
+
+\subsection{Búsqueda por fuerza bruta}
+
+El algoritmo prueba cada posición de \(T\) y compara desde allí los caracteres
+de \(P\), avanzando una posición tras cada intento.
+\begin{itemize}
+    \item \textbf{Preparación:} \(\Theta(1)\); no construye estructuras previas.
+    \item \textbf{Mejor caso de búsqueda:} \(\Theta(n - m + 1)\), cuando cada
+    intento falla al comparar el primer carácter. Una coincidencia inicial puede
+    añadir hasta \(O(m)\) comparaciones, pero el algoritmo debe revisar las
+    posiciones restantes para contar todas las ocurrencias.
+    \item \textbf{Peor caso de búsqueda:} \(\Theta((n - m + 1)m)\), si cada ventana
+    coincide en casi todo el patrón antes de fallar o confirmarse.
+    \item \textbf{Memoria auxiliar:} \(\Theta(1)\).
+\end{itemize}
+
+\subsection{Knuth--Morris--Pratt (KMP)}
+
+KMP construye una tabla que indica qué prefijo del patrón puede conservarse
+después de una discrepancia. Así desplaza el patrón sin retroceder en el texto.
+La implementación construye la tabla en cada llamada y luego
+recorre el texto; tras una coincidencia, también usa la tabla para conservar
+posibles coincidencias superpuestas.
+
+\begin{itemize}
+    \item \textbf{Preparación e inicialización:} \(\Theta(m)\) tiempo y
+    memoria para construir la tabla de prefijos.
+    \item \textbf{Mejor caso de búsqueda:} \(\Theta(n)\).
+    \item \textbf{Peor caso de búsqueda:} \(\Theta(n)\); el recorrido avanza por
+    el texto y los retrocesos del patrón son amortizadamente lineales.
+    Incluida la preparación, el tiempo es \(\Theta(n+m)\).
+    \item \textbf{Memoria auxiliar:} \(\Theta(m)\), por la tabla.
+\end{itemize}
+
+\subsection{Rabin--Karp}
+
+Rabin--Karp calcula el hash del patrón \(P\) y el de la primera ventana de
+\(T\) durante la preparación. La búsqueda verifica esa primera ventana y luego
+desplaza la ventana, actualizando su hash en tiempo constante. Compara
+caracteres para confirmar cada coincidencia de hash.
+
+\begin{itemize}
+    \item \textbf{Preparación e inicialización:} \(\Theta(m)\) tiempo para
+    calcular ambos hashes: el de \(P\) y el de la primera ventana de \(T\).
+    \item \textbf{Mejor caso de búsqueda:} \(\Theta(n - m + 1)\), cuando el
+    hash de \(P\) difiere del hash de todas las ventanas examinadas. No hay
+    verificaciones carácter a carácter y cada ventana se procesa en tiempo
+    constante.
+    \item \textbf{Peor caso de búsqueda:} \(\Theta((n - m + 1)m)\), si muchas
+    ventanas requieren una verificación completa, por colisiones o coincidencias
+    reales superpuestas.
+    \item \textbf{Memoria auxiliar:} \(\Theta(1)\).
+\end{itemize}
+
+El peor caso puede ocurrir por colisiones de hash o por coincidencias reales en
+muchas ventanas. Como se usan parámetros de hash fijos y no se supone una
+distribución aleatoria de las entradas, no se afirma una garantía de tiempo
+esperado. Se asume que las operaciones con el hash modular cuestan tiempo
+constante.
+
+\subsection{Suffix Array}
+
+La estructura ordena los sufijos de \(T\) mediante duplicación de prefijos:
+en cada ronda duplica el largo del prefijo ordenado y actualiza clases con
+conteo. Para contar un patrón, realiza dos búsquedas binarias que delimitan
+    los sufijos que comienzan con \(P\); no recorre individualmente las
+\(z\) ocurrencias.
+
+\begin{itemize}
+    \item \textbf{Preparación (construcción):} \(O(n \log n)\) tiempo en el
+    peor caso y \(\Theta(n)\) memoria, mediante duplicación de prefijos y
+    ordenamiento por conteo en cada ronda. Esta implementación ejecuta todas
+    las rondas, por lo que su construcción toma \(\Theta(n \log n)\).
+    \item \textbf{Mejor caso de búsqueda:} \(\Theta(\log n)\), si las
+    comparaciones binarias terminan al revisar el primer carácter.
+    \item \textbf{Peor caso de búsqueda:} \(O(m \log n)\), pues cada comparación
+    puede revisar hasta \(m\) caracteres. Es la búsqueda binaria básica, sin
+    optimizaciones basadas en LCP; contar el intervalo cuesta \(O(1)\).
+    \item \textbf{Memoria:} \(O(1)\) auxiliar por consulta; el índice
+    persistente ocupa \(\Theta(n)\) y la memoria temporal de construcción,
+    \(\Theta(n)\).
+\end{itemize}
+
+La memoria depende de los largos de entrada, no de su contenido; por ello no
+cambia entre mejor y peor caso.
+
+\subsection{Comparación de complejidades}
+
+Los tiempos de búsqueda incluyen el conteo. En Rabin--Karp, la preparación
+incluye el hash de \(P\) y el de la primera ventana de \(T\). La preparación del
+Suffix Array corresponde a su construcción; se distingue el espacio auxiliar
+por consulta del índice persistente y de la memoria temporal de construcción.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Método} & \textbf{Preparación} & \textbf{Mejor búsqueda} &
+\textbf{Peor búsqueda} & \shortstack{\textbf{Memoria auxiliar /}\\\textbf{índice}} \\
+\midrule
+Fuerza bruta & \(\Theta(1)\) & \(\Theta(n - m + 1)\) & \(\Theta((n - m + 1)m)\) & \(\Theta(1)\) \\
+KMP & \(\Theta(m)\) & \(\Theta(n)\) & \(\Theta(n)\) & \(\Theta(m)\) \\
+Rabin--Karp & \(\Theta(m)\) & \(\Theta(n - m + 1)\) & \(\Theta((n - m + 1)m)\) & \(\Theta(1)\) \\
+Suffix Array & \(\Theta(n \log n)\) & \(\Theta(\log n)\) & \(O(m \log n)\) & \shortstack{\(O(1)\) consulta;\\\(\Theta(n)\) índice persistente;\\\(\Theta(n)\) temporal al construir} \\
+\bottomrule
+\end{tabular}
+\end{center}
