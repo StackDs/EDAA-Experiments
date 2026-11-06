@@ -34,7 +34,7 @@ def render(summary, args):
         "grid.alpha": 0.3,
         "grid.linestyle": "--",
         "figure.figsize": (8, 5.2),
-        "savefig.dpi": 200,
+        "savefig.dpi": 300,
         "savefig.bbox": "tight",
     })
     styles = {
@@ -42,6 +42,10 @@ def render(summary, args):
         for index, (key, _) in enumerate(groups(summary, args.group_by))
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    for pattern in ("fig_*.png", "fig_*.pdf"):
+        for previous in args.output_dir.glob(pattern):
+            previous.unlink()
+    (args.output_dir / "summary.csv").unlink(missing_ok=True)
     for number, (facet, panel) in enumerate(groups(summary, args.facet_by), start=1):
         figure, axis = plt.subplots()
         try:
@@ -68,18 +72,14 @@ def render(summary, args):
             axis.set_ylabel(args.ylabel or f"{args.y}: mediana e intervalo [Q1, Q3]")
             axis.set_xscale(args.xscale)
             axis.set_yscale(args.yscale)
-            if args.yscale == "linear":
-                axis.set_ylim(bottom=0)
+            axis.margins(x=.07, y=.15)
             axis.legend(loc="best")
             filename = f"fig_{slug(args.y)}_vs_{slug(args.x)}_{number:03d}"
             destination = args.output_dir / f"{filename}.png"
             figure.savefig(destination)
-            if args.pdf:
-                figure.savefig(args.output_dir / f"{filename}.pdf")
             print(destination)
         finally:
             plt.close(figure)
-    summary.to_csv(args.output_dir / "summary.csv", index=False)
 
 
 def main(argv=None):
@@ -95,7 +95,6 @@ def main(argv=None):
     parser.add_argument("--ylabel")
     parser.add_argument("--title")
     parser.add_argument("--output-dir", type=Path, default=BASE / "plots" / "generated")
-    parser.add_argument("--pdf", action="store_true", help="Guardar PDF además de PNG")
     args = parser.parse_args(argv)
     try:
         samples = load_samples(args.inputs, args.x, args.y, args.group_by, args.facet_by)

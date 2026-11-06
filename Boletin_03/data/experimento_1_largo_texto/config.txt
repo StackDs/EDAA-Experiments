@@ -1,0 +1,14 @@
+corpus_sha256=ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7
+profile=official
+size=10000000
+count=5
+sizes=1000000,2000000,4000000,8000000,10000000,
+lengths=8,16,32,64,128,256,
+experiment=text_size
+runs=32
+target_ns=5000000
+max_batch=1000000
+q=101
+construction_timing=repeated
+manifest_sha256=5ea50c66f6798b31be76b2675dac2566ea239acffe711080df00b11b05b0790a
+config_id=487b4f52409c847719ae964cb85d428bac67f080999aeb370eaf5a8617fbe70f

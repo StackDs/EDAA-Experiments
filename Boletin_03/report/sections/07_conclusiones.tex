@@ -1,0 +1,113 @@
+\section{Conclusiones}
+
+\subsection{Experimento 1: efecto del largo del texto}
+
+Al aumentar el texto de 1 a 10 MB, los tiempos de fuerza bruta, KMP y
+Rabin--Karp crecieron entre 7 y 8 veces, comportamiento compatible con un
+crecimiento aproximadamente lineal en el rango estudiado. Fuerza bruta
+presentó los menores tiempos entre los métodos sin índice sobre estas
+entradas, lo que muestra que una mejor cota de peor caso no garantiza un
+menor tiempo en cada conjunto de datos. La proporcionalidad no fue exacta;
+los resultados no permiten atribuir esas desviaciones a una causa concreta.
+
+Las consultas de Suffix Array se mantuvieron por debajo de un microsegundo,
+sin crecimiento sostenido. Esto no demuestra tiempo constante ni que un
+texto mayor favorezca la búsqueda: su cota es \(O(m\log n)\), y multiplicar
+el texto por diez cambia poco su logaritmo. Para 10 MB, la consulta promedió
+\(0{,}532\,\mu\mathrm{s}\), pero construir el índice requirió \(34{,}57\) s.
+El índice persistente ocupó 90 MB y el pico total de construcción alcanzó
+410 MB; ambos crecieron linealmente con el texto. El pico ya incluye las
+reservas persistentes presentes en ese instante, por lo que no se suman
+ambas magnitudes. La ventaja de consulta tiene, por tanto, un costo inicial
+y espacial que debe evaluarse por separado.
+
+\subsection{Experimento 2: efecto del largo del patrón}
+
+Al extender el patrón de 8 a 256 bytes, no se observó un aumento sostenido
+del tiempo. Para KMP, esto es coherente con \(O(n+m)\): frente a un texto
+fijo de diez millones de bytes, la preparación de patrones de hasta
+256 bytes tiene un peso reducido. Rabin--Karp también recorre prácticamente
+la misma cantidad de ventanas. En fuerza bruta, muchas comparaciones pueden
+terminar antes de examinar el patrón completo, por lo que su cota
+\(O(nm)\) no exige un crecimiento proporcional a \(m\) en estas entradas.
+
+La caída observada para fuerza bruta con patrones de 32 bytes no permite
+concluir que esa longitud sea óptima: entre longitudes cambian también los
+patrones y sus prefijos. Suffix Array tampoco mostró una penalización
+sostenida al aumentar \(m\), sin que ello invalide su cota teórica. En
+memoria, KMP sí incrementa la tabla auxiliar con el patrón, mientras el
+índice persistente permanece fijo porque el texto no cambia. La conclusión
+se limita, así, a una baja sensibilidad temporal en el rango evaluado.
+
+\subsection{Experimento 3: efecto del número de ocurrencias}
+
+En el corpus natural no apareció una relación proporcional clara entre
+frecuencia y tiempo. Los métodos sin índice recorren el texto incluso si
+el patrón está ausente; además, patrones con distintas frecuencias también
+difieren en contenido. Por ello, no puede atribuirse toda variación a
+\(z\). Suffix Array localiza los límites del intervalo de coincidencias y
+los resta, sin visitar cada resultado: contar no exige el mismo trabajo
+que devolver todas sus posiciones.
+
+Los casos \(T=A^n\), con \(P=A\) y \(P=B\), contrastan presencia máxima y
+ausencia, pero no establecen que más coincidencias siempre implique mayor
+tiempo. Por ejemplo, para 10 MB KMP promedió aproximadamente 19 ms con
+\(P=A\) y 86 ms con \(P=B\). Al ser \(m=1\), los tres métodos sin índice
+mantienen costo lineal en \(n\) en ambos casos; estas pruebas no reproducen
+el peor caso cuadrático de fuerza bruta con patrones de longitud creciente.
+
+\clearpage
+\subsection{Conclusión general}
+
+Los experimentos muestran que la selección de un método no debe basarse en
+una clasificación única de rapidez. Es necesario distinguir el costo de
+una consulta aislada del costo total de preparar y reutilizar una
+estructura, así como separar las garantías asintóticas del desempeño
+observado en un corpus concreto. Una curva casi horizontal en un gráfico
+logarítmico no demuestra complejidad constante, y una implementación con
+peor cota teórica puede resultar competitiva cuando las entradas no
+presentan su caso desfavorable.
+
+Para pocas consultas o textos que cambian frecuentemente, los métodos sin
+índice evitan una construcción costosa y la reserva persistente asociada.
+Fuerza bruta constituye una alternativa sencilla y fue competitiva sobre
+el texto natural evaluado. Sin embargo, no ofrece la garantía
+\(O(n+m)\) de KMP, que resulta preferible cuando interesa limitar el costo
+ante entradas desfavorables o repetitivas. Su mayor tiempo en parte de
+estos experimentos no elimina esa ventaja: el caso promedio observado y
+la protección frente al peor caso responden a necesidades distintas.
+
+Para muchas consultas sobre un texto estático, Suffix Array puede
+compensar su construcción mediante búsquedas mucho más rápidas, siempre
+que haya memoria suficiente. Si \(Q\) es la cantidad de consultas, una
+comparación simplificada considera
+\[
+    T_{\mathrm{SA}}(Q)=T_{\text{construcción}}+Q\,t_{\mathrm{SA}},
+    \qquad
+    T_{\text{sin índice}}(Q)=Q\,t_{\text{sin índice}}.
+\]
+Este modelo ilustra la amortización, pero no determina un umbral universal:
+los tiempos dependen de los patrones, del equipo y de la posibilidad de
+reutilizar el índice. Tampoco representa una medición de una carga mixta
+de consultas o de actualizaciones del texto.
+
+Rabin--Karp, con esta implementación y \(q=101\), no mostró una ventaja
+temporal frente a las otras alternativas evaluadas. No corresponde
+generalizar ese resultado a todas sus variantes ni atribuirlo únicamente
+a colisiones, cuyo número no se midió. Cambiar la configuración del hash
+y registrar las verificaciones permitiría estudiar mejor ese comportamiento.
+
+El alcance de estas conclusiones está limitado por un solo corpus natural,
+los tamaños seleccionados y los casos sintéticos específicos. Las
+32 repeticiones describen variabilidad temporal, pero no reemplazan la
+diversidad de entradas; sus desviaciones estándar tampoco prueban
+significancia estadística. Además, se midió conteo, no recuperación de
+posiciones, y memoria dinámica, no memoria total del proceso. Como extensión,
+sería útil evaluar otros corpus, patrones repetitivos de longitud creciente
+y cargas de muchas consultas que incluyan la construcción del índice.
+
+En síntesis, no existe una alternativa universalmente superior. La decisión
+debe equilibrar cantidad de consultas, estabilidad del texto, memoria
+disponible y garantías requeridas, utilizando la teoría para anticipar
+riesgos y la experimentación para estimar los costos efectivos del
+escenario de uso.

@@ -1,0 +1,115 @@
+\begingroup
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\captionsetup{font=small,skip=4pt}
+\captionsetup[subfigure]{font=small,justification=centering,skip=2pt}
+\section{Resultados experimentales}
+
+\subsection{Experimento 1: largo del texto}
+
+\begin{figure}[!ht]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_1_largo_texto/tiempo_consulta_vs_largo_texto.png}
+        \caption{Tiempo de consulta.}
+        \label{fig:res-texto-tiempo}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_1_largo_texto/memoria_auxiliar_consulta_vs_largo_texto.png}
+        \caption{Memoria auxiliar por consulta.}
+        \label{fig:res-texto-memoria-consulta}
+    \end{subfigure}
+
+    \par\medskip
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_1_largo_texto/tiempo_construccion_suffix_array_vs_largo_texto.png}
+        \caption{Tiempo de construcción.}
+        \label{fig:res-texto-construccion}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_1_largo_texto/memoria_indice_y_construccion_suffix_array_vs_largo_texto.png}
+        \caption{Memoria del índice y construcción.}
+        \label{fig:res-texto-memoria-indice}
+    \end{subfigure}
+    \caption{Experimento 1: largo del texto.}
+    \label{fig:res-experimento-1}
+\end{figure}
+
+\clearpage
+\subsection{Experimento 2: largo del patrón}
+
+\begin{figure}[!ht]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_2_largo_patron/tiempo_consulta_vs_largo_patron.png}
+        \caption{Tiempo de consulta.}
+        \label{fig:res-patron-tiempo}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_2_largo_patron/memoria_auxiliar_consulta_vs_largo_patron.png}
+        \caption{Memoria auxiliar por consulta.}
+        \label{fig:res-patron-memoria-consulta}
+    \end{subfigure}
+
+    \par\medskip
+    \begin{subfigure}[t]{0.58\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_2_largo_patron/memoria_indice_y_construccion_suffix_array_texto_fijo.png}
+        \caption{Memoria del índice y construcción.}
+        \label{fig:res-patron-memoria-indice}
+    \end{subfigure}
+    \caption{Experimento 2: largo del patrón.}
+    \label{fig:res-experimento-2}
+\end{figure}
+
+\clearpage
+\subsection{Experimento 3: número de ocurrencias}
+
+\begin{figure}[!ht]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_numero_ocurrencias/tiempo_consulta_vs_numero_ocurrencias.png}
+        \caption{Tiempo de consulta.}
+        \label{fig:res-ocurrencias-tiempo}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_numero_ocurrencias/memoria_indice_y_construccion_suffix_array_texto_fijo.png}
+        \caption{Memoria del índice y construcción.}
+        \label{fig:res-ocurrencias-memoria-indice}
+    \end{subfigure}
+
+    \par\medskip
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_numero_ocurrencias/casos_unarios/tiempo_consulta_patron_A_presente_vs_largo_texto.png}
+        \caption{Consulta de \(P=A\) en texto unario.}
+        \label{fig:res-unario-presente}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_numero_ocurrencias/casos_unarios/tiempo_consulta_patron_B_ausente_vs_largo_texto.png}
+        \caption{Consulta de \(P=B\) en texto unario.}
+        \label{fig:res-unario-ausente}
+    \end{subfigure}
+
+    \par\medskip
+    \begin{subfigure}[t]{0.54\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_numero_ocurrencias/casos_unarios/memoria_indice_y_construccion_suffix_array_vs_largo_texto_unario.png}
+        \caption{Memoria del índice para texto unario.}
+        \label{fig:res-unario-memoria-indice}
+    \end{subfigure}
+    \caption{Experimento 3: número de ocurrencias.}
+    \label{fig:res-experimento-3}
+\end{figure}
+\clearpage
+\input{sections/06_tablas_resumen}
+\endgroup

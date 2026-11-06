@@ -1,0 +1,14 @@
+corpus_sha256=ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7
+profile=official
+size=10000000
+count=5
+sizes=1000000,2000000,4000000,8000000,10000000,
+lengths=8,16,32,64,128,256,
+experiment=pattern_size
+runs=32
+target_ns=5000000
+max_batch=1000000
+q=101
+construction_timing=setup_only
+manifest_sha256=33bfdd489c10fda4dbb88bb269645fc818e2e19da8a299c7dfbf03fe9bf7c4eb
+config_id=6105683064344cad6358c24072d166a907e3537014bce4c651196e9db36e8ead

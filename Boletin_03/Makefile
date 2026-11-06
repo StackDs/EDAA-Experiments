@@ -4,7 +4,7 @@ DEPFLAGS = -MMD -MP
 PYTHON ?= $(if $(wildcard ../.venv/bin/python3),$(abspath ../.venv/bin/python3),python3)
 TECTONIC ?= tectonic
 PLOT_ARGS ?=
-SESSION ?=
+SESSION ?= $(if $(DATA_ROOT),$(DATA_ROOT),data)
 HEADERS := $(wildcard include/string_matching/*.hpp include/utils/*.hpp)
 BENCHES := bin/bench_text_size bin/bench_pattern_size bin/bench_occurrences
 export CXX CXXFLAGS
@@ -49,8 +49,14 @@ run_pattern_size: build
 run_occurrences: build
 	PYTHON="$(PYTHON)" bash benchmarks/run_occurrences.sh
 
-run_all: build
-	PYTHON="$(PYTHON)" bash benchmarks/run_all.sh
+# Evitamos efectos reales con -n, incluso al usar Make recursivamente.
+run_all:
+	@case "$${MAKEFLAGS%% *}" in *n*) exit 0 ;; esac; \
+	exec 9>texts/.benchmark.lock; \
+	flock -n 9 || { echo "Ya hay otra preparacion o medicion activa" >&2; exit 1; }; \
+	trap '$(MAKE) --no-print-directory clean' EXIT; \
+	$(MAKE) --no-print-directory build && \
+	BENCHMARK_LOCK_FD=9 PYTHON="$(PYTHON)" bash benchmarks/run_all.sh
 
 plot:
 	$(PYTHON) plots/plot_experiments.py --session "$(SESSION)" $(PLOT_ARGS)
@@ -63,5 +69,7 @@ report:
 
 clean:
 	rm -f $(BENCHES) bin/prepare_patterns bin/memory_tracking.o bin/build-config.json bin/*.d
+	rm -f plots/__pycache__/*.py[co] scripts/__pycache__/*.py[co]
+	@rmdir bin plots/__pycache__ scripts/__pycache__ 2>/dev/null || true
 
 -include $(wildcard bin/*.d)

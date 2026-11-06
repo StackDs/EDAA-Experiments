@@ -7,6 +7,7 @@
 #include <thread>
 #include "benchmark_output.hpp"
 #include "index_storage.hpp"
+#include "progress.hpp"
 #include "string_matching/brute_force.hpp"
 #include "string_matching/kmp.hpp"
 #include "string_matching/rabin_karp.hpp"
@@ -17,6 +18,8 @@ inline void construct_index(const std::string &text, const std::string &dataset,
                             const Options &o, Output &output, IndexStorage &index,
                             bool measure_construction) {
     Context context{dataset, sha256(text), "", "suffix_array", "construction", text.size(), 0, 0};
+    std::cout << dataset << " n=" << text.size()
+              << " method=suffix_array | Preparacion y memoria del indice" << std::endl;
     // Medimos las reservas en una pasada distinta del tiempo
     memory::begin();
     try { index.build(text); } catch (...) { memory::cancel(); throw; }
@@ -26,9 +29,12 @@ inline void construct_index(const std::string &text, const std::string &dataset,
     if (!measure_construction) return;
     index.reset();
     // Calentamos una construccion antes de guardar muestras
+    std::cout << "Calentamiento de construccion" << std::endl;
     index.build(text);
     index.reset();
     std::vector<Sample> samples;
+    std::cout << "Construccion del Suffix Array | Repeticiones" << std::endl;
+    display_progress(0, o.runs);
     for (std::size_t run = 0; run < o.runs; ++run) {
         const auto begin = Clock::now();
         index.build(text);
@@ -36,13 +42,16 @@ inline void construct_index(const std::string &text, const std::string &dataset,
         const auto end = Clock::now();
         samples.push_back({1, elapsed_ns(begin, end)});
         if (run + 1 != o.runs) index.reset();
+        display_progress(run + 1, o.runs);
     }
     output.times(context, samples);
 }
 
 template<class Call>
 void measure_pattern(Call call, const Pattern &p, const Context &c, const Options &o, Output &output) {
-    const auto samples = measure_queries(call, p.z, o.runs, o.target_ns, o.max_batch);
+    std::cout << "Patron=" << p.id << " m=" << p.bytes.size() << " z=" << p.z
+              << " | Calentamiento y calibracion" << std::endl;
+    const auto samples = measure_queries(call, p.z, o.runs, o.target_ns, o.max_batch, display_progress);
     output.times(c, samples);
     memory::begin();
     std::int64_t result;
@@ -131,7 +140,7 @@ inline int run_experiment(int argc, char **argv, const std::string &experiment) 
         return 0;
     } catch (const std::exception &error) {
         memory::cancel();
-        std::cerr << "Error: " << error.what() << '\n';
+        std::cerr << "\nError: " << error.what() << '\n';
         return 1;
     }
 }

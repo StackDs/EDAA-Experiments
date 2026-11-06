@@ -94,7 +94,8 @@ public:
 
     std::int64_t count(const std::string_view s)
     {
-        if (s.length() > t.length())
+        // t incluye el centinela: el texto original tiene un byte menos
+        if (s.length() >= t.length())
             return 0;
 
         std::int64_t n, lo, mi, hi, matches;

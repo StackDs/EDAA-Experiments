@@ -1,0 +1,94 @@
+EJEMPLOS DE TEXTOS Y PATRONES — BOLETÍN 03
+
+Corpus natural: primeros 10.000.000 bytes de english.50MB (Pizza & Chili,
+textos en inglés de Project Gutenberg).
+Fuente: https://pizzachili.dcc.uchile.cl/texts/nlang/english.50MB.gz
+SHA-256 de los 10 MB: ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7
+
+Las posiciones se cuentan en bytes desde cero. Las comillas delimitan los
+ejemplos, pero no forman parte del texto o patrón. En esta representación,
+\n significa un salto de línea (byte 0a) y \t una tabulación (byte 09).
+Los espacios y saltos de línea son parte de las entradas originales.
+
+1. EXPERIMENTO 1: LARGO DEL TEXTO
+
+Fragmento real del corpus: bytes [0, 96), es decir, las posiciones 0 a 95.
+Texto: "\n\n\n\n\nThis etext was produced by Normal Wolcott.\n\n\n\n\n\nTen Days that Shook the World\n\nby John Reed"
+
+Identificador: u32_4
+Patrón: "This etext was produced by Norma"
+Longitud: 32 bytes
+Posición de extracción: 5
+Ocurrencias: 1 en cada prefijo experimental de 1, 2, 4, 8 y 10 MB.
+También aparece una vez en el fragmento de 96 bytes mostrado arriba.
+Manifiesto: data/experimento_1_largo_texto/patterns.csv
+
+2. EXPERIMENTO 2: LARGO DEL PATRÓN
+
+Los siguientes patrones se extrajeron del mismo inicio del corpus.
+Los conteos indicados corresponden al texto completo de 10 MB.
+
+Identificador: u8_0
+Patrón: "ced by N"
+Longitud: 8 bytes
+Posición de extracción: 25
+Ocurrencias en 10 MB: 1
+
+Identificador: u16_0
+Patrón: "as produced by N"
+Longitud: 16 bytes
+Posición de extracción: 17
+Ocurrencias en 10 MB: 1
+
+Identificador: u64_0
+Patrón: "\n\n\n\n\nThis etext was produced by Normal Wolcott.\n\n\n\n\n\nTen Days th"
+Longitud: 64 bytes
+Posición de extracción: 0
+Ocurrencias en 10 MB: 1
+
+Manifiesto: data/experimento_2_largo_patron/patterns.csv
+
+3. EXPERIMENTO 3: NÚMERO DE OCURRENCIAS
+
+Todos estos patrones tienen 4 bytes. Los conteos corresponden a los 10 MB
+completos, incluyen solapamientos y no son los conteos de los fragmentos.
+
+Fragmento real del corpus: bytes [785047, 785103).
+Texto: "eakettle\t\tA.B. Mitford\n\nAdventures of Little Peachling\t\t"
+
+Identificador: f151601454
+Patrón: "\t\tA."
+Posición de extracción: 785055
+Ocurrencias en 10 MB: 2
+
+Identificador: f168430090
+Patrón: "\n\n\n\n"
+Posición de extracción: 0
+Ocurrencias en 10 MB: 1793
+
+Fragmento real del corpus: bytes [233, 289).
+Texto: "endices.\nThe footnotes are included at the end of each c"
+
+Identificador: f173303909
+Patrón: "\nThe"
+Posición de extracción: 241
+Ocurrencias en 10 MB: 3763
+
+Identificador: a0
+Patrón: "\t\t\t\t"
+Posición de extracción: no corresponde; es un patrón ausente construido
+con el alfabeto observado, no una subcadena extraída del corpus.
+Ocurrencias en 10 MB: 0
+
+Manifiesto: data/experimento_3_numero_ocurrencias/patterns.csv
+
+4. CASOS UNARIOS DEL EXPERIMENTO 3
+
+Ejemplo reducido del texto sintético A^n, con n = 10:
+Texto: "AAAAAAAAAA"
+Patrón: "A" — longitud 1 byte — ocurrencias: 10.
+Patrón: "B" — longitud 1 byte — ocurrencias: 0.
+
+En las mediciones se usaron n = 1.000.000, 2.000.000, 4.000.000, 8.000.000
+y 10.000.000: para el patrón A el conteo fue n; para B fue cero.
+El texto de diez caracteres anterior es solo una ilustración reducida.

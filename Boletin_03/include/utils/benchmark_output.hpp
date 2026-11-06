@@ -26,11 +26,12 @@ class Output {
 
 public:
     Output(const Options &o, const std::string &name, const std::string &hash)
-        : directory(o.output), experiment(name), session(o.output.parent_path().filename().string()) {
+        : directory(o.output), experiment(name),
+          session(o.session_id.empty() ? o.output.parent_path().filename().string() : o.session_id) {
         if (session.find_first_of(",\r\n\"") != std::string::npos)
             throw std::runtime_error("Nombre de sesion no valido para CSV");
         if (directory.empty() || session.empty() || !std::filesystem::create_directory(directory))
-            throw std::runtime_error("La salida debe ser un directorio nuevo dentro de una sesion");
+            throw std::runtime_error("La salida del experimento debe ser un directorio nuevo");
         const auto manifest = read_file(o.patterns / (name + ".csv"));
         const auto config = preparation_config(o, hash) + "experiment=" + name +
             "\nruns=" + std::to_string(o.runs) + "\ntarget_ns=" + std::to_string(o.target_ns) +

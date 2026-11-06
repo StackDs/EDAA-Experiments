@@ -63,7 +63,8 @@ double timed_batch(Call &call, std::uint64_t expected, std::size_t batch_size) {
 
 template<class Call>
 std::vector<Sample> measure_queries(Call call, std::uint64_t expected, std::size_t runs,
-                                   std::size_t target_ns, std::size_t max_batch) {
+                                   std::size_t target_ns, std::size_t max_batch,
+                                   void (*progress)(std::size_t, std::size_t) = nullptr) {
     if (runs < 4 || !target_ns || !max_batch) throw std::runtime_error("Parametros de medicion invalidos");
     // Calentamos y calibramos sin guardar estas ejecuciones como muestras
     timed_batch(call, expected, 1);
@@ -72,8 +73,12 @@ std::vector<Sample> measure_queries(Call call, std::uint64_t expected, std::size
         batch = std::min(max_batch, batch * 2);
     std::vector<Sample> samples;
     samples.reserve(runs);
-    for (std::size_t run = 0; run < runs; ++run)
+    if (progress) progress(0, runs);
+    for (std::size_t run = 0; run < runs; ++run) {
         samples.push_back({batch, timed_batch(call, expected, batch) / batch});
+        // Actualizamos la terminal despues de cerrar el intervalo medido
+        if (progress) progress(run + 1, runs);
+    }
     return samples;
 }
 }

@@ -1,0 +1,21 @@
+{
+  "cpu_core": "2",
+  "profile": "official",
+  "runs": "32",
+  "pause_seconds": "2",
+  "target_ns": "5000000",
+  "max_batch": "1000000",
+  "platform": "Linux-7.2.14-arch1-1-x86_64-with-glibc2.44",
+  "compiler_command": "g++",
+  "compiler": "g++ (GCC) 16.2.1 20260810",
+  "flags": "-std=c++20 -O3 -march=native -Wall -Wextra -pedantic -Iinclude",
+  "binary_sha256": {
+    "bench_occurrences.d": "54eb4bf3a699878807ca89ad7b33d03565d59c7a479ab2ad5a49cca941937ac0",
+    "bench_text_size": "483133b103dbde903b0fec977054c44e8370775b7c3695b6b3a93014ff94a750",
+    "bench_occurrences": "5969590e36d51bac1a3ae25663e87cfb3b20deeca547e72701a6d41430da4fa5",
+    "bench_pattern_size.d": "1d68d8a00ced26d83291f1379f12a511910e16bf9b64f55a01d6e44d7ae00242",
+    "bench_text_size.d": "b4fdd556145fbf7039ebdd8e69a0c96b802dbdf4c68c276335949db511353ecb",
+    "bench_pattern_size": "ff160345939118b0d8b8d75d00a495dc529c3af731db6f9a1182e064778750c5"
+  },
+  "session_id": "official-20261106-020553-16Zcfv"
+}
