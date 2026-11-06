@@ -12,6 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from plot_utils import groups, load_samples, summarize
+from progress_utils import Progress
 
 
 BASE = Path(__file__).resolve().parents[1]
@@ -42,7 +43,9 @@ def render(summary, args):
         for index, (key, _) in enumerate(groups(summary, args.group_by))
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    for number, (facet, panel) in enumerate(groups(summary, args.facet_by), start=1):
+    panels = list(groups(summary, args.facet_by))
+    progress = Progress(len(panels) + 1, "Graficador generico")
+    for number, (facet, panel) in enumerate(panels, start=1):
         figure, axis = plt.subplots()
         try:
             for key, series in groups(panel, args.group_by):
@@ -73,13 +76,16 @@ def render(summary, args):
             axis.legend(loc="best")
             filename = f"fig_{slug(args.y)}_vs_{slug(args.x)}_{number:03d}"
             destination = args.output_dir / f"{filename}.png"
+            progress.show("Guardando " + destination.name)
             figure.savefig(destination)
             if args.pdf:
+                progress.show("Guardando " + filename + ".pdf")
                 figure.savefig(args.output_dir / f"{filename}.pdf")
-            print(destination)
         finally:
             plt.close(figure)
+        progress.advance(str(destination))
     summary.to_csv(args.output_dir / "summary.csv", index=False)
+    progress.advance("summary.csv guardado")
 
 
 def main(argv=None):
@@ -98,11 +104,14 @@ def main(argv=None):
     parser.add_argument("--pdf", action="store_true", help="Guardar PDF además de PNG")
     args = parser.parse_args(argv)
     try:
+        progress = Progress(2, "Lectura y resumen")
         samples = load_samples(args.inputs, args.x, args.y, args.group_by, args.facet_by)
+        progress.advance("Muestras leidas")
         for column, scale in ((args.x, args.xscale), (args.y, args.yscale)):
             if scale == "log" and (samples[column] <= 0).any():
                 raise ValueError(f"La escala logarítmica requiere {column} > 0")
         summary = summarize(samples, args.x, args.y, args.group_by, args.facet_by)
+        progress.advance("Resumen calculado")
         render(summary, args)
     except (OSError, ValueError) as error:
         print(f"Error: {error}", file=sys.stderr)
