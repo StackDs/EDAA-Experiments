@@ -4,7 +4,9 @@ Los algoritmos directos reciben primero el patrón y luego el texto, y devuelven
 un contador de ocurrencias; Suffix Array se construye con el texto y se consulta
 con el patrón. Fuerza bruta se incorporó como línea base; KMP,
 Rabin--Karp y Suffix Array se obtuvieron del repositorio del curso. Las cuatro implementaciones cuentan coincidencias
-superpuestas.
+superpuestas. Para conservar los bytes originales del corpus se corrigió la
+interpretación de caracteres como \texttt{unsigned char} en los índices del
+Suffix Array y en el hash de Rabin--Karp, sin sustituir sus algoritmos.
 
 \subsection{Búsqueda por fuerza bruta}
 

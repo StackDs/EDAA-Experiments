@@ -32,10 +32,13 @@ se medirán en bytes, conservando mayúsculas, espacios y puntuación.
 Los patrones serán subcadenas del corpus, no necesariamente palabras completas.
 Antes de medir se verificarán sus frecuencias, incluidas las coincidencias
 superpuestas, y se conservarán sus bytes, longitudes y posiciones de extracción.
-Los ejemplos literales se incorporarán tras seleccionar los patrones reales,
-sin atribuir al corpus fragmentos no comprobados. También se verificará la
-compatibilidad de sus bytes con las implementaciones, en particular el
-centinela y la indexación de caracteres del Suffix Array.
+Por ejemplo, se verificaron como únicas las subcadenas
+\texttt{his etext was produced by Normal} (32 bytes, posición 6) y
+\texttt{Normal W} (8 bytes, posición 32), contando las posiciones desde cero.
+Se conserva el archivo comprimido original y un manifiesto SHA-256; la
+preparación rechaza cambios de contenido. El prefijo verificado no contiene
+bytes de valor 0 a 3, por lo que se mantiene el centinela ETX del Suffix Array.
+Los bytes altos se interpretan sin signo, sin modificar el texto.
 
 Como excepción obligatoria se generará \(T=A^n\). Por ejemplo,
 \texttt{AAAAAAAAAA} contiene diez ocurrencias de \(P=\texttt{A}\) y ninguna de
@@ -51,7 +54,12 @@ La lectura del archivo, la selección de patrones y la validación de conteos
 quedarán fuera del tiempo medido.
 
 El esquema de medición se basará en la plantilla \texttt{uhr}, de Leonardo
-Lovera (LELE), \cite{lovera-uhr}. 
+Lovera (LELE), usando \texttt{std::chrono::steady\_clock} y nanosegundos
+\cite{lovera-uhr}. Cada patrón se medirá en un lote calibrado fuera de muestra
+para alcanzar al menos 5 ms o un máximo de un millón de consultas. El tamaño
+del lote se conservará entre repeticiones y su tiempo se dividirá por la
+cantidad de consultas. La construcción se expresará en tiempo por construcción,
+sin incluir la destrucción del índice.
 
 Cada configuración tendrá \textbf{64 repeticiones}, después del calentamiento.
 Se usarán los mismos lotes de patrones para todos los métodos; los conteos se
@@ -66,11 +74,19 @@ ocurrencias se conservará el resumen por patrón para no mezclar conteos
 distintos. Las repeticiones temporales no se tratarán como patrones independientes.
 En Rabin--Karp se mantendrá \(q=101\) en todos los experimentos.
 
-Se reportarán también la memoria auxiliar de KMP y la memoria persistente y
-temporal de construcción del Suffix Array, contabilizando las capacidades de
-sus cadenas y vectores, sin incluir la entrada compartida ni los datos del
-medidor. Fuerza bruta y Rabin--Karp no reservan memoria dinámica auxiliar.
-Esta medida no se presentará como memoria residente total del proceso.
+La memoria se medirá en una pasada independiente mediante seguimiento de los
+bytes solicitados al asignador por cadenas y vectores. Se distinguirán el pico
+auxiliar por consulta, el índice persistente, el pico total de construcción y
+el pico temporal de las reservas liberadas durante la construcción. Se excluyen
+la entrada compartida, los metadatos del asignador y los datos del medidor; el
+seguimiento permanece desactivado al cronometrar. Fuerza bruta y Rabin--Karp no
+reservan memoria dinámica auxiliar, aunque usan variables escalares constantes.
+Estas medidas no representan la memoria residente total del proceso.
+
+Para graficar frente a \(n\) y \(m\), se promediarán con igual peso los tiempos
+de los patrones en cada repetición y se resumirán esos 64 promedios. Frente a
+\(z\), cada patrón conservará su propio punto y dispersión. Se preservarán
+CSV crudos y resúmenes con los parámetros y hashes de cada sesión.
 
 \subsubsection{Efecto del largo del texto}
 
