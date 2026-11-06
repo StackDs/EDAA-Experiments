@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 URL = "https://pizzachili.dcc.uchile.cl/texts/nlang/english.50MB.gz"
-SIZE = 50_000_000
-SHA256 = "974837f10883d6d0b4b2d4896ff9c4adc23363fced1f5f9b031f287c54c6b437"
+SIZE = 10_000_000
+SHA256 = "ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7"
 
 
 def digest(path):

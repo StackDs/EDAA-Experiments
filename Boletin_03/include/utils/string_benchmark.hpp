@@ -14,13 +14,16 @@
 
 namespace bench {
 inline void construct_index(const std::string &text, const std::string &dataset,
-                            const Options &o, Output &output, IndexStorage &index) {
+                            const Options &o, Output &output, IndexStorage &index,
+                            bool measure_construction) {
     Context context{dataset, sha256(text), "", "suffix_array", "construction", text.size(), 0, 0};
     // Medimos las reservas en una pasada distinta del tiempo
     memory::begin();
     try { index.build(text); } catch (...) { memory::cancel(); throw; }
     const auto usage = memory::finish();
     output.memory(context, usage);
+    // Fuera del experimento de texto usamos esta unica construccion como preparacion
+    if (!measure_construction) return;
     index.reset();
     // Calentamos una construccion antes de guardar muestras
     index.build(text);
@@ -104,12 +107,12 @@ inline int run_experiment(int argc, char **argv, const std::string &experiment) 
         if (experiment == "text_size") {
             for (auto n : o.sizes) {
                 std::string text = corpus.substr(0, n);
-                construct_index(text, "english", o, output, index);
+                construct_index(text, "english", o, output, index, true);
                 measure_text(text, "english", patterns, o, output, index);
                 index.reset();
             }
         } else {
-            construct_index(corpus, "english", o, output, index);
+            construct_index(corpus, "english", o, output, index, false);
             measure_text(corpus, "english", patterns, o, output, index);
             index.reset();
         }
@@ -118,7 +121,7 @@ inline int run_experiment(int argc, char **argv, const std::string &experiment) 
                 std::string text(n, 'A');
                 std::vector<Pattern> extremes = {{"A", "A", "unary_present", n, "0"},
                                                  {"B", "B", "unary_absent", 0, ""}};
-                construct_index(text, "unary", o, output, index);
+                construct_index(text, "unary", o, output, index, false);
                 measure_text(text, "unary", extremes, o, output, index);
                 index.reset();
             }

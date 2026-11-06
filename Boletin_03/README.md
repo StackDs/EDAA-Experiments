@@ -38,7 +38,7 @@ son de dos segundos. Para seleccionar otro núcleo explícitamente:
 CPU_CORE=3 make run_all
 ```
 
-Parámetros: `RUNS` (64, mínimo 4), `CPU_CORE` (2), `PAUSE_SECONDS` (2),
+Parámetros: `RUNS` (32, mínimo 32), `CPU_CORE` (2), `PAUSE_SECONDS` (2),
 `TARGET_NS` (5000000), `MAX_BATCH` (1000000), `DATA_ROOT`, `TEXT_FILE`,
 `PATTERN_DIR` y `CORPUS_ARCHIVE` (gzip local para evitar descarga).
 
@@ -46,7 +46,7 @@ Parámetros: `RUNS` (64, mínimo 4), `CPU_CORE` (2), `PAUSE_SECONDS` (2),
 
 `texts/english.50MB.gz` conserva el original de Pizza & Chili. La preparación
 valida el gzip completo y su CRC, y comprueba contra un SHA-256 conocido los
-primeros 50.000.000 bytes. `texts/manifest.json` registra procedencia, tamaño y
+primeros 10.000.000 bytes. `texts/manifest.json` registra procedencia, tamaño y
 hashes. `english.bin` se genera localmente y no se duplica en Git.
 
 Las funciones de `include/utils/text_data.hpp` cargan prefijos mediante lectura
@@ -57,16 +57,16 @@ cada sesión conserva además una copia exacta de los patrones utilizados.
 
 El prefijo real contiene, por ejemplo, `his etext was produced by Normal`
 (offset 6, 32 bytes) y `Normal W` (offset 32, 8 bytes), ambos únicos en los
-50.000.000 bytes. Son subcadenas, no necesariamente palabras completas.
+10.000.000 bytes. Son subcadenas, no necesariamente palabras completas.
 
 ## Experimentos oficiales
 
-1. **Largo del texto:** 1, 5, 10, 20 y 50 MB; diez patrones fijos de 32 bytes
+1. **Largo del texto:** 1, 2, 4, 8 y 10 MB; cinco patrones fijos de 32 bytes
    extraídos del primer MB y únicos en el corpus completo, manteniendo z=1.
-2. **Largo del patrón:** texto de 50 MB; diez patrones únicos por longitud
+2. **Largo del patrón:** texto de 10 MB; cinco patrones únicos por longitud
    8, 16, 32, 64, 128 y 256 bytes. Se reutiliza el mismo índice para consultar.
-3. **Ocurrencias:** texto de 50 MB, patrones de 4 bytes: hasta diez por cada
-   tercio logarítmico de frecuencias observadas y diez ausentes comprobados.
+3. **Ocurrencias:** texto de 10 MB, patrones de 4 bytes: hasta cinco por cada
+   tercio logarítmico de frecuencias observadas y cinco ausentes comprobados.
    Incluye por separado los casos obligatorios A^n buscando A/B para los cinco
    tamaños. Los patrones ausentes usan el alfabeto observado, pero no se
    presentan como fragmentos extraídos del corpus.
@@ -88,7 +88,15 @@ para evitar que GCC elimine consultas repetidas. Se divide por consultas, no
 por caracteres ni coincidencias. Lectura, selección, validación y escritura de
 resultados quedan fuera del reloj. La preparación interna de KMP y Rabin–Karp
 sí está incluida; Rabin–Karp usa q=101. La construcción del Suffix Array se mide
-aparte, una por repetición y por texto; su destrucción queda fuera del reloj.
+aparte, con 32 repeticiones por tamaño únicamente en el experimento del largo
+del texto; su destrucción queda fuera del reloj. En los otros experimentos y en
+los casos unarios se construye una sola vez para preparar las consultas, sin
+repetir esa evaluación temporal. Su memoria se registra igualmente.
+
+Esta configuración apunta a completar el estudio en menos de una hora sin
+reducir las 32 repeticiones. La duración depende del equipo y no se garantiza
+significancia estadística: las diferencias se interpretarán junto con su
+variabilidad, manteniendo controles y varios patrones por configuración.
 
 Cada experimento genera:
 

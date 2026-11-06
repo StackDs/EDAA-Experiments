@@ -34,7 +34,9 @@ public:
         const auto manifest = read_file(o.patterns / (name + ".csv"));
         const auto config = preparation_config(o, hash) + "experiment=" + name +
             "\nruns=" + std::to_string(o.runs) + "\ntarget_ns=" + std::to_string(o.target_ns) +
-            "\nmax_batch=" + std::to_string(o.max_batch) + "\nq=101\nmanifest_sha256=" + sha256(manifest) + "\n";
+            "\nmax_batch=" + std::to_string(o.max_batch) + "\nq=101\nconstruction_timing=" +
+            (name == "text_size" ? "repeated" : "setup_only") +
+            "\nmanifest_sha256=" + sha256(manifest) + "\n";
         config_id = sha256(config);
         std::ofstream meta(directory / "config.txt");
         meta << config << "config_id=" << config_id << "\n";

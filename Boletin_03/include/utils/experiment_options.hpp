@@ -9,9 +9,9 @@ namespace bench {
 struct Options {
     std::filesystem::path text = "texts/english.bin", patterns = "texts/patterns-official", output;
     std::string profile = "official";
-    std::size_t size = 50000000, count = 10, runs = 64, target_ns = 5000000, max_batch = 1000000;
+    std::size_t size = 10000000, count = 5, runs = 32, target_ns = 5000000, max_batch = 1000000;
     std::size_t pause_seconds = 2;
-    std::vector<std::size_t> sizes = {1000000,5000000,10000000,20000000,50000000};
+    std::vector<std::size_t> sizes = {1000000,2000000,4000000,8000000,10000000};
     std::vector<std::size_t> lengths = {8,16,32,64,128,256};
 };
 
@@ -43,8 +43,9 @@ inline Options parse_options(int argc, char **argv) {
         else if (key == "--lengths") o.lengths = numbers(value);
         else throw std::runtime_error("Opcion desconocida " + key);
     }
+    if (o.runs < 32) throw std::runtime_error("Se requieren al menos 32 repeticiones");
     if (o.profile != "official" ||
-        o.runs < 4 || o.runs > 100000 || o.count == 0 || o.count > 100 ||
+        o.runs > 100000 || o.count == 0 || o.count > 100 ||
         o.target_ns == 0 || o.max_batch == 0 || o.max_batch > 1000000 ||
         o.sizes.back() != o.size || o.lengths.back() > o.sizes.front() ||
         o.sizes.front() < 32)

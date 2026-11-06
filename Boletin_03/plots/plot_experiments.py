@@ -49,6 +49,8 @@ def load_session(session):
     metadata = json.loads((session / "session.json").read_text())
     if metadata["profile"] != "official":
         raise ValueError("Solo se admiten sesiones del protocolo oficial")
+    if int(metadata["runs"]) < 32:
+        raise ValueError("Se requieren al menos 32 repeticiones")
     frames, memories = [], []
     for experiment in ("text_size", "pattern_size", "occurrences"):
         directory = session / experiment
@@ -57,6 +59,9 @@ def load_session(session):
         if not (directory / "COMPLETE").is_file():
             raise ValueError(f"Experimento incompleto {experiment}")
         config = read_config(directory / "config.txt")
+        expected_timing = "repeated" if experiment == "text_size" else "setup_only"
+        if config.get("construction_timing") != expected_timing:
+            raise ValueError("Medicion de construccion incompatible con el protocolo")
         config_id = config["config_id"]
         config_text = (directory / "config.txt").read_text().rsplit("config_id=", 1)[0]
         if hashlib.sha256(config_text.encode()).hexdigest() != config_id:
@@ -136,14 +141,17 @@ def load_session(session):
                 if set(part[part["pattern_id"] == "A"]["z"]) != {n} or set(part[part["pattern_id"] == "B"]["z"]) != {0}:
                     raise ValueError("Conteo unario incompatible")
         builds = frame[frame["phase"] == "construction"]
-        if builds.empty or set(builds["method"]) != {"suffix_array"} or (builds["batch_size"] != 1).any():
-            raise ValueError("Construccion incompatible")
-        if set(builds["m"]) != {0} or set(builds["z"]) != {0} or set(builds["pattern_id"]) != {""}:
-            raise ValueError("La construccion no es una consulta")
         query_texts = set(map(tuple, queries[["dataset", "n", "corpus_sha256"]].drop_duplicates().to_numpy()))
-        build_texts = set(map(tuple, builds[["dataset", "n", "corpus_sha256"]].drop_duplicates().to_numpy()))
-        if query_texts != build_texts:
-            raise ValueError("Falta la construccion de algun texto")
+        if experiment == "text_size":
+            if builds.empty or set(builds["method"]) != {"suffix_array"} or (builds["batch_size"] != 1).any():
+                raise ValueError("Construccion incompatible")
+            if set(builds["m"]) != {0} or set(builds["z"]) != {0} or set(builds["pattern_id"]) != {""}:
+                raise ValueError("La construccion no es una consulta")
+            build_texts = set(map(tuple, builds[["dataset", "n", "corpus_sha256"]].drop_duplicates().to_numpy()))
+            if query_texts != build_texts:
+                raise ValueError("Falta la construccion de algun texto")
+        elif not builds.empty:
+            raise ValueError("La construccion solo se cronometra en el experimento del texto")
         maximum = english[english["n"] == int(config["size"])]
         if set(maximum["corpus_sha256"]) != {config["corpus_sha256"]}:
             raise ValueError("Hash del corpus incompatible")
@@ -153,7 +161,12 @@ def load_session(session):
             raise ValueError("Memoria incompleta")
         if memory.duplicated(CONTROLS).any():
             raise ValueError("Memoria duplicada")
-        joined = frame[CONTROLS].drop_duplicates().merge(memory[CONTROLS], on=CONTROLS, how="outer", indicator=True)
+        # La memoria del indice tambien se registra cuando solo se prepara para consultar
+        indexes = queries[CONTROLS].drop_duplicates(["dataset", "n", "corpus_sha256"]).copy()
+        indexes["m"], indexes["z"], indexes["pattern_id"] = 0, 0, ""
+        indexes["method"], indexes["phase"] = "suffix_array", "construction"
+        expected_memory = pd.concat([queries[CONTROLS].drop_duplicates(), indexes], ignore_index=True)
+        joined = expected_memory.merge(memory[CONTROLS], on=CONTROLS, how="outer", indicator=True)
         if not (joined["_merge"] == "both").all():
             raise ValueError("Memoria y consultas incompatibles")
         for column in columns:

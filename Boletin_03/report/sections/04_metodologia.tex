@@ -25,7 +25,7 @@ características:
 
 Los textos procederán del archivo \texttt{english.50MB} de Pizza \& Chili,
 formado por textos en inglés de Project Gutenberg \cite{pizzachili}. Se usarán
-sus primeros 50 millones de bytes y prefijos de 1, 5, 10 y 20 millones de bytes;
+sus primeros 10 millones de bytes y prefijos de 1, 2, 4 y 8 millones de bytes;
 en este estudio, \(1\,\mathrm{MB}=10^6\) bytes. Las longitudes \(n\) y \(m\)
 se medirán en bytes, conservando mayúsculas, espacios y puntuación.
 
@@ -49,7 +49,10 @@ Como excepción obligatoria se generará \(T=A^n\). Por ejemplo,
 Se compararán los cuatro métodos sobre las mismas entradas. La búsqueda de KMP
 y Rabin--Karp incluirá la preparación que sus funciones realizan en cada llamada;
 la consulta del Suffix Array usará el índice ya construido. Su construcción se
-medirá por separado, de modo que una consulta rápida no oculte ese costo inicial.
+medirá por separado solo en el experimento del largo del texto, con 32
+repeticiones por tamaño. En los otros experimentos y los casos unarios se
+construirá una sola vez para preparar las consultas, sin repetir esa evaluación.
+Así se informa el costo inicial sin multiplicar mediciones del mismo trabajo.
 La lectura del archivo, la selección de patrones y la validación de conteos
 quedarán fuera del tiempo medido.
 
@@ -61,7 +64,7 @@ del lote se conservará entre repeticiones y su tiempo se dividirá por la
 cantidad de consultas. La construcción se expresará en tiempo por construcción,
 sin incluir la destrucción del índice.
 
-Cada configuración tendrá \textbf{64 repeticiones}, después del calentamiento.
+Cada configuración tendrá \textbf{32 repeticiones}, después del calentamiento.
 Se usarán los mismos lotes de patrones para todos los métodos; los conteos se
 consumirán para evitar su eliminación por el compilador y se validarán fuera
 del intervalo medido. Se aplicará afinidad al núcleo lógico 2 y una pausa de
@@ -84,16 +87,23 @@ reservan memoria dinámica auxiliar, aunque usan variables escalares constantes.
 Estas medidas no representan la memoria residente total del proceso.
 
 Para graficar frente a \(n\) y \(m\), se promediarán con igual peso los tiempos
-de los patrones en cada repetición y se resumirán esos 64 promedios. Frente a
+de los patrones en cada repetición y se resumirán esos 32 promedios. Frente a
 \(z\), cada patrón conservará su propio punto y dispersión. Se preservarán
 CSV crudos y resúmenes con los parámetros y hashes de cada sesión.
+
+Los tamaños y cantidades de patrones se acotan para procurar una duración computacional razonable, 
+conservando 32 repeticiones y los tres efectos requeridos.
+No se presupone significancia estadística: se interpretarán las diferencias
+observadas junto con su dispersión. Las barras de desviación estándar no
+constituyen una prueba de hipótesis ni garantizan por sí solas diferencias
+significativas.
 
 \subsubsection{Efecto del largo del texto}
 
 \begin{itemize}
-    \item \textbf{Variable:} \(n\), con textos de 1, 5, 10, 20 y 50 MB.
-    \item \textbf{Controles:} diez patrones distintos de \(m=32\) bytes,
-    extraídos del primer MB y verificados como únicos en los 50 MB. Se usará
+    \item \textbf{Variable:} \(n\), con textos de 1, 2, 4, 8 y 10 MB.
+    \item \textbf{Controles:} cinco patrones distintos de \(m=32\) bytes,
+    extraídos del primer MB y verificados como únicos en los 10 MB. Se usará
     exactamente el mismo conjunto en todos los tamaños, manteniendo \(z=1\).
     La selección se realizará antes de medir, sin insertar coincidencias.
     \item \textbf{Resultados:} tiempo por consulta frente a \(n\), construcción
@@ -115,13 +125,13 @@ porque \(m\) no cambia.
 \begin{itemize}
     \item \textbf{Variable:} \(m\), con longitudes de 8, 16, 32, 64, 128 y
     256 bytes.
-    \item \textbf{Controles:} un texto fijo de 50 MB y diez patrones distintos
+    \item \textbf{Controles:} un texto fijo de 10 MB y cinco patrones distintos
     por longitud, cada uno con exactamente una ocurrencia verificada. Así se
     evita confundir patrones más largos con una disminución del conteo.
     El Suffix Array será el mismo para todas las longitudes.
     \item \textbf{Resultados:} tiempo por consulta y memoria frente a \(m\).
-    Se informará el costo de construcción del índice como costo fijo, sin
-    incluirlo nuevamente en cada consulta.
+    El costo fijo de construcción del índice se tomará del experimento del
+    largo del texto, sin volver a cronometrarlo ni incluirlo en cada consulta.
 \end{itemize}
 
 \textbf{Hipótesis.} KMP conservará un costo dominado por recorrer el texto,
@@ -136,14 +146,14 @@ con cota \(O(m\log n)\), sin que aumente la memoria del índice.
 
 \begin{itemize}
     \item \textbf{Variable:} \(z\), el número de ocurrencias, incluidas las
-    superpuestas. Se fijarán \(n=50\) MB y \(m=4\) bytes en el corpus inglés.
+    superpuestas. Se fijarán \(n=10\) MB y \(m=4\) bytes en el corpus inglés.
     \item \textbf{Selección:} se contarán las subcadenas distintas de cuatro
-    bytes y se elegirán treinta patrones presentes distribuidos entre
+    bytes y se elegirán quince patrones presentes distribuidos entre
     frecuencias bajas, intermedias y altas. Se dividirá el rango de frecuencias
-    observadas en tres grupos sobre escala logarítmica y se tomarán diez patrones
-    por grupo. Se añadirán diez patrones ausentes de igual longitud, cuya ausencia
+    observadas en tres grupos sobre escala logarítmica y se tomarán cinco patrones
+    por grupo. Se añadirán cinco patrones ausentes de igual longitud, cuya ausencia
     se comprobará. Las frecuencias reales, no valores impuestos, serán el eje
-    horizontal; si algún grupo no aporta diez patrones, se reportarán todos los
+    horizontal; si algún grupo no aporta cinco patrones, se reportarán todos los
     disponibles y su cantidad.
     \item \textbf{Caso extremo:} se usará además \(T=A^n\), con los cinco
     tamaños del primer experimento, buscando \(P=A\) y \(P=B\). Ambos patrones

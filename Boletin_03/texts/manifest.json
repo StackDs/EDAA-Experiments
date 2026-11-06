@@ -6,8 +6,8 @@
   "archive_sha256": "4261b313e2e662563db93e04224ed8a9181ccbbe0e53b4d521798af8f9f2c263",
   "decompressed_bytes": 52428800,
   "text": "english.bin",
-  "text_bytes": 50000000,
-  "text_sha256": "974837f10883d6d0b4b2d4896ff9c4adc23363fced1f5f9b031f287c54c6b437",
+  "text_bytes": 10000000,
+  "text_sha256": "ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7",
   "mb_bytes": 1000000,
   "encoding": "raw bytes"
 }

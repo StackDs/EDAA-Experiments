@@ -16,7 +16,7 @@
 
 namespace bench {
 inline constexpr const char *corpus_hash =
-    "974837f10883d6d0b4b2d4896ff9c4adc23363fced1f5f9b031f287c54c6b437";
+    "ab426bd5952843c190cc9705f94dfe42a1fbbc53dcb06f480ebd21facea6d9f7";
 
 inline std::size_t number(std::string_view value) {
     std::size_t result = 0;
