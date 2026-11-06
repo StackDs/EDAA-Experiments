@@ -39,9 +39,9 @@ int main() {
         progress.advance("Completo");
     }
     std::cout.rdbuf(original_output);
-    assert(log.str().find("0% 0/2") != std::string::npos);
-    assert(log.str().find("50% 1/2") != std::string::npos);
-    assert(log.str().find("100% 2/2") != std::string::npos);
+    assert(log.str().find("[" + std::string(60, ' ') + "] 0%  0/2") != std::string::npos);
+    assert(log.str().find("[" + std::string(30, '=') + std::string(30, ' ') + "] 50%  1/2") != std::string::npos);
+    assert(log.str().find("[" + std::string(60, '=') + "] 100%  2/2") != std::string::npos);
     assert(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
     for (std::size_t n = 1; n <= 33; ++n) {
         auto values = generar_arreglo(n, 1729);
@@ -119,8 +119,9 @@ def main():
             bar.advance("Primera tarea")
             bar.advance("Completo")
         text = log.getvalue()
-        assert "0% 0/2" in text and "50% 1/2" in text and "100% 2/2" in text
-        assert text.endswith("\n") and ("\r" in text) == terminal
+        for actual in range(3):
+            assert f"\r[{'=' * (30 * actual)}{' ' * (60 - 30 * actual)}] {50 * actual}%  {actual}/2" in text
+        assert text.endswith("\n")
     checks.advance("Barra Python en terminal y salida redirigida")
     root = "/tmp/opencode" if Path("/tmp/opencode").is_dir() else None
     with tempfile.TemporaryDirectory(prefix="boletin04-check-", dir=root) as directory:
@@ -151,6 +152,7 @@ def main():
                                 cwd=BASE, env=env, capture_output=True)
         assert denied.returncode != 0 and not (temp / "denied").exists()
         checks.advance("Parametros invalidos y rechazo sin piloto")
+        print(flush=True)
         with (BASE / "data/.benchmark.lock").open("a") as held:
             fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
             result = subprocess.run(["bash", str(BASE / "benchmarks/run_smoke.sh"),
@@ -163,8 +165,9 @@ def main():
                 print(result.stderr, file=sys.stderr)
             result.check_returncode()
         for label in ["Mediciones smoke", "Memoria smoke", "Validacion CSV", "Estadisticas y tablas",
-                      "Graficos PNG y PDF", "smoke | Resultados y graficos completos"]:
-            assert any("100%" in line and label in line for line in result.stdout.splitlines()), label
+                      "Graficos PNG", "smoke | Resultados y graficos completos"]:
+            assert label in result.stdout, label
+        assert result.stdout.count("100%") >= 6
         assert "repeticion=1/4" in result.stdout and "semilla=1729" in result.stdout
         checks.advance("Pipeline pequeno completo con progreso")
         session = next((temp / "data").glob("smoke-*"))
@@ -178,21 +181,83 @@ def main():
         tree_memory = memory[(memory.method == "segment_tree") & (memory.phase == "construction")]
         assert (tree_memory.index_bytes == tree_memory.input_bytes * 2).all()
         per_run, summary = module.summarize(samples)
+        seed_test = module.pd.DataFrame({"method": ["sparse_table"] * 3,
+                                        "seed": [1729, 2718, 31415], "t_mean": [10., 20., 30.],
+                                        "runs": [4, 32, 64], "t_stdev": [100., 200., 300.]})
+        averaged = module.average_seeds(seed_test, ["method"], ["t_mean"]).iloc[0]
+        assert averaged.seeds == 3 and averaged.t_mean == 20
+        assert averaged.t_mean_between_seed_sd == 10
+        single = module.average_seeds(seed_test.iloc[:1], ["method"], ["t_mean"]).iloc[0]
+        assert module.pd.isna(single.t_mean_between_seed_sd)
+        try:
+            module.average_seeds(module.pd.concat([seed_test, seed_test.iloc[:1]]), ["method"], ["t_mean"])
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Se acepto una semilla duplicada")
+        plot_summary, _ = module.plot_summaries(summary, memory)
+        assert plot_summary.seeds.eq(1).all()
+        assert plot_summary.t_mean_between_seed_sd.isna().all()
+        assert (session / "plots/plot_summary.csv").is_file()
+        assert (session / "plots/memory_plot_summary.csv").is_file()
+        cycles = module.dynamic_cycles(samples)
+        assert len(cycles) == len(samples[samples.experiment == "maintenance"])
+        assert cycles.queries.eq(60).all() and cycles.updates.eq(1).all()
+        assert (cycles.elapsed_ns == cycles.maintenance_ns + cycles.query_ns).all()
+        # Reconstruye un ciclo desde las filas crudas para detectar duplicaciones
+        for row in cycles.itertuples():
+            matched = samples[(samples.method == row.method) & (samples.n == row.n)
+                              & (samples.seed == row.seed) & (samples.run == row.run) & (samples.cycle == row.cycle)]
+            expected = matched[matched.experiment.isin(["maintenance", "dynamic_queries"])].elapsed_ns.sum()
+            assert abs(row.elapsed_ns - expected) < 1e-6
+        for row in per_run[per_run.experiment == "dynamic_queries"].itertuples():
+            matched = cycles[(cycles.method == row.method) & (cycles.n == row.n)
+                             & (cycles.seed == row.seed) & (cycles.run == row.run)]
+            assert row.operations == 2 and abs(row.time_ns - matched.elapsed_ns.mean()) < 1e-6
+        for broken in [samples.drop(samples[samples.experiment == "maintenance"].index[0]),
+                       module.pd.concat([samples, samples[samples.experiment == "maintenance"].iloc[:1]])]:
+            try:
+                module.dynamic_cycles(broken)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Se acepto mantenimiento ausente o duplicado")
+        paired = samples.copy()
+        paired["elapsed_ns"] = paired.elapsed_ns.astype(float)
+        m = paired.experiment == "maintenance"
+        q = paired.experiment == "dynamic_queries"
+        paired.loc[m, "elapsed_ns"] = (paired.loc[m, "run"] + 1) * 100
+        paired.loc[q, "elapsed_ns"] = (1000 - (paired.loc[q, "run"] + 1) * 100) * paired.loc[q, "operations"] / 60
+        _, paired_summary = module.summarize(paired)
+        totals = paired_summary[paired_summary.experiment == "dynamic_queries"]
+        assert (abs(totals.t_mean - 1000) < 1e-9).all()
+        assert (abs(totals.t_stdev) < 1e-9).all()
         figure_count = (summary.groupby(["experiment", "range"]).ngroups
-                        + summary[summary.experiment.isin(["static_queries", "dynamic_queries"])].groupby(["experiment", "n"]).ngroups + 3)
+                        + summary[summary.experiment == "static_queries"].groupby(["experiment", "n"]).ngroups + 3)
         assert len(list((session / "plots").glob("*.png"))) == figure_count
-        assert len(list((session / "plots").glob("*.pdf"))) == figure_count
-        assert any(f"100% {figure_count}/{figure_count}" in line and "Graficos PNG y PDF" in line
-                   for line in result.stdout.splitlines())
+        assert not list((session / "plots").glob("*.pdf"))
+        assert f"100%  {figure_count}/{figure_count}" in result.stdout
+        assert (session / "execution.log").is_file()
+        assert "CSV y mediciones completos" in (session / "execution.log").read_text()
         log = io.StringIO()
-        with redirect_stdout(log), patch.object(module.plt.Figure, "savefig", side_effect=[None, OSError("Fallo PDF")]):
+        with redirect_stdout(log), patch.object(module.plt.Figure, "savefig", side_effect=OSError("Fallo PNG")):
             try:
                 module.render(summary, memory, temp)
             except OSError:
                 pass
             else:
-                raise AssertionError("Se ignoro un fallo al guardar PDF")
+                raise AssertionError("Se ignoro un fallo al guardar PNG")
         assert "100%" not in log.getvalue() and not module.plt.get_fignums()
+        plotted = []
+        def verify_plot(figure, destination):
+            axis = figure.axes[0]
+            assert set(axis.get_legend_handles_labels()[1]) == {"Sparse Table", "Segment Tree"}
+            assert len(axis.get_legend_handles_labels()[0]) == 2
+            assert axis.get_xscale() == "log" and axis.get_yscale() == "linear"
+            plotted.append(destination)
+        with redirect_stdout(io.StringIO()), patch.object(module.plt.Figure, "savefig", verify_plot):
+            module.render(summary, memory, temp, 60)
+        assert len(plotted) == figure_count
         assert (summary.runs == 4).all()
         assert module.quartiles([1,2,3,4]) == (1, 1.75, 2.5, 3.25, 4)
         path = session / "construction.csv"
@@ -242,6 +307,7 @@ def main():
         failed = next((temp / "failed").glob("smoke-*"))
         assert not (failed / "COMPLETE").exists()
         assert json.loads((failed / "session.json").read_text())["status"] == "incomplete"
+        assert "Fallo en mediciones" in (failed / "execution.log").read_text()
         checks.advance("Timeout sin anunciar exito ni completar la sesion")
     print("OK generadores RMQ actualizaciones sanitizadores CSV y figuras")
     print("Pruebas y salidas pequenas eliminadas sin ejecutar la bateria oficial")

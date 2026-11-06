@@ -23,9 +23,9 @@ El diseño experimental contempla cuatro comparaciones:
     reconstruir Sparse Table después del mismo cambio. Esta comparación
     representa el costo de mantener respuestas vigentes, no dos operaciones
     de actualización equivalentes.
-    \item \textbf{Consultas en el escenario dinámico:} medir el tiempo de
-    respuesta después de aplicar los cambios y mantener ambas estructuras
-    actualizadas, separándolo del costo de mantenimiento.
+    \item \textbf{Costo del escenario dinámico:} comparar la suma del tiempo
+    de mantenimiento y las consultas del mismo ciclo, incluyendo una
+    reconstrucción de Sparse Table o una actualización de Segment Tree.
 \end{itemize}
 
 En cada comparación se utilizarán las mismas entradas y consultas para ambas

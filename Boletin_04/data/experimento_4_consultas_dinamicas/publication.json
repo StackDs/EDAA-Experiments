@@ -1,0 +1,11 @@
+{
+  "layout": "rmq-experiments-v1",
+  "source_session": "/home/stack/schl/EDAA-Experiments/Boletin_04/data/official-20261106-185540-Gmo0WTDo",
+  "session_id": "official-20261106-185540-Gmo0WTDo",
+  "config_id": "afa19573b228363a20f81155720bd99ab3b45bd3c4abe460d339ba3437727f2d",
+  "experiment": "dynamic_queries",
+  "analysis": "dynamic-cycle-sum-v1",
+  "plot_aggregation": "equal-weight-seed-means-v1",
+  "error_bars": "sample-standard-deviation-of-seed-means",
+  "unit": "ns_per_cycle"
+}

@@ -2,7 +2,12 @@
 
 **Informe:** [report/Boletin04.pdf](report/Boletin04.pdf)
 
-**Estado:** batería preparada y comprobada con casos pequeños; todavía no se han ejecutado el piloto completo ni las mediciones oficiales.
+**Estado:** sesiones, CSV, gráficos y binarios anteriores eliminados para iniciar
+una ejecución limpia con `make all`. El análisis dinámico incluye el mantenimiento
+y las consultas del mismo ciclo.
+Los CSV y gráficos se publican por experimento en `data/experimento_*` y
+`plots/experimento_*`, como en el boletín 3.
+El informe compila, pero aún falta redactar e incorporar la sección de resultados.
 
 ---
 
@@ -29,7 +34,11 @@ Boletin_04/
 │   ├── run_all.sh                  # Piloto automático y batería, o reutilización de PILOT
 │   ├── run_pilot.sh                # Piloto con cuatro repeticiones
 │   └── run_smoke.sh                # Comprobaciones pequeñas, no oficiales
-├── data/                           # Sesiones nuevas, sin sobrescribir resultados
+├── data/                           # CSV por experimento y archivo de sesiones
+│   ├── experimento_1_construccion/
+│   ├── experimento_2_consultas_estaticas/
+│   ├── experimento_3_mantenimiento/
+│   ├── experimento_4_consultas_dinamicas/
 │   └── <perfil-fecha-id>/           # Se crea al ejecutar
 │       ├── construction.csv
 │       ├── static_queries.csv
@@ -38,14 +47,19 @@ Boletin_04/
 │       ├── calibration.csv
 │       ├── memory.csv
 │       ├── session.json
+│       ├── execution.log           # Salida y errores en las nuevas sesiones
 │       ├── COMPLETE
-│       └── plots/                  # PNG, PDF y tablas de esa sesión
+│       └── plots/                  # PNG y tablas de esa sesión
 ├── include/                        # Estructuras y funciones auxiliares en C++
 │   ├── range_queries/
 │   │   ├── sparse_table.hpp
 │   │   └── segment_tree.hpp
 │   └── utils/                      # Generación, secuencias, medición, memoria y SHA-256
 ├── plots/                          # Scripts generadores de gráficos
+│   ├── experimento_1_construccion/
+│   ├── experimento_2_consultas_estaticas/
+│   ├── experimento_3_mantenimiento/
+│   ├── experimento_4_consultas_dinamicas/
 │   ├── plot_experiments.py         # Validación y gráficos oficiales de una sesión
 │   ├── plot_boletin04.py           # Graficador genérico
 │   ├── progress_utils.py            # Barra de validación, tablas y gráficos
@@ -65,7 +79,24 @@ Boletin_04/
 └── obsidian/                       # Notas locales, excluidas de Git
 ```
 
-Las sesiones del árbol son la organización de salida prevista, no resultados ya obtenidos. El plan inicial de `docs/` es histórico y no dirige la ejecución.
+Las sesiones se conservan por separado. El plan inicial de `docs/` es histórico y no dirige la ejecución.
+
+Cada carpeta `data/experimento_*` contiene `samples.csv`, `summary.csv`,
+`plot_summary.csv`, `run_means.csv`, `session.json`, `publication.json` y `COMPLETE`. La calibración
+acompaña las consultas estáticas; la memoria de construcción y mantenimiento
+acompaña los experimentos 1 y 3. Las carpetas correspondientes de `plots/`
+contienen las figuras PNG y su procedencia en `publication.json`.
+`summary.csv` conserva los estadísticos por semilla; `plot_summary.csv` contiene
+los puntos graficados, con igual peso por semilla: `t_mean` es la media de sus
+medias, `t_mean_between_seed_sd` es la desviación estándar muestral entre ellas
+y `seeds` indica cuántas semillas contribuyen. La memoria tiene un resumen
+equivalente en `memory_plot_summary.csv`.
+El piloto permanece archivado en su sesión y no reemplaza los resultados oficiales.
+En el experimento 4, `samples.csv` contiene los ciclos derivados: `maintenance_ns`
+incluye reconstrucción o `update`, `query_ns` suma los lotes de consultas y
+`elapsed_ns` es la suma de ambos. `queries` y `updates` registran sus cantidades;
+`operations=1` identifica un ciclo y `range=cycle` combina las longitudes.
+`query_samples.csv` conserva el detalle original de consultas sin mantenimiento.
 
 ---
 
@@ -93,17 +124,22 @@ Cada configuración y semilla tendrá **32 repeticiones**, con calentamiento fue
 - **Condición:** Mismas posiciones y nuevos valores, distintos del vigente. Las posiciones se eligen uniformemente con reemplazo. No se agrupan cambios antes de reconstruir la tabla.
 - **Medición:** Tiempo de `update` en Segment Tree frente a reconstrucción de Sparse Table, sin consultas ni construcción inicial. La tabla anterior se libera fuera del cronómetro.
 
-### 4. Experimento 4: Consultas en el escenario dinámico
+### 4. Experimento 4: Costo dinámico de mantenimiento y consultas
 
-- **Dominio:** Los lotes posteriores a cada cambio del Experimento 3: 10.000 consultas medidas por estructura y repetición.
+- **Dominio:** Diez ciclos del Experimento 3: cada uno incluye un cambio y 1.000 consultas, para un total de 10 cambios y 10.000 consultas por estructura y repetición.
 - **Condición:** Ambas estructuras representan el mismo estado actualizado. Las 1.000 consultas de cada ciclo se reparten entre longitudes con diferencia máxima de una consulta, sin repetir cambios o reconstrucciones por longitud. No se fuerza a incluir la posición modificada; esta se verifica por separado fuera del reloj.
-- **Medición:** Tiempo por consulta tras las modificaciones, separado del mantenimiento. Los diez ciclos se agregan dentro de cada repetición normalizando por operaciones; no se cuentan como repeticiones independientes.
+- **Medición:** Tiempo por ciclo: reconstrucción de Sparse Table más las 1.000 consultas, frente a `update` de Segment Tree más las mismas consultas. Se suman los intervalos ya cronometrados del mismo método, tamaño, semilla, repetición y ciclo; el mantenimiento se cuenta una sola vez, no por longitud. Se excluye la construcción inicial. Es una suma de componentes medidos, no un cronómetro de extremo a extremo: generación, validación, escritura y liberación siguen fuera del reloj.
+- **Resumen:** Se promedian los diez ciclos dentro de cada repetición antes de calcular media, desviación estándar y cuartiles entre las 32 repeticiones de cada semilla. Para el gráfico se promedian las tres medias por semilla con igual peso y se muestra su dispersión. Los CSV usan nanosegundos por ciclo y el gráfico milisegundos por ciclo, con el eje X en elementos. Los gráficos de solo consultas no representan el resultado principal del escenario dinámico.
 
 Se conservarán los cuatro CSV crudos, la calibración, la memoria y los metadatos de cada sesión. Las filas identifican estructura, `n`, `k`, semilla, repetición, ciclo, operaciones, tiempo, checksum, huella de entrada y sesión/configuración. Se comprueban hasta ocho consultas por longitud y estado con una referencia lineal independiente, además de contrastar los checksums dinámicos. En las comprobaciones pequeñas se verifican todos los rangos y casos de borde.
 
 La memoria se analiza en una pasada separada del cronometraje, distinguiendo almacenamiento retenido, nuevas asignaciones y picos durante construcción y reconstrucción. Se excluyen la entrada externa, RSS y metadatos del asignador. El ejecutable de tiempos no enlaza el reemplazo de `new/delete`; cero reservas nuevas en `update` no significa cero memoria total del árbol.
 
-Los gráficos oficiales se generan en **PNG y PDF**, con **eje X logarítmico y eje Y lineal**, y muestran media ± desviación estándar muestral, no intervalos de confianza. Los resúmenes incluyen mínimo, Q1, mediana, Q3 y máximo con la convención de cuartiles de `uhr`. Cada semilla conserva su resumen: las 32 repeticiones no son arreglos independientes ni garantizan significancia estadística.
+Los gráficos oficiales se generan únicamente en **PNG**, con **eje X logarítmico y eje Y lineal** y **dos curvas**, una por estructura. Cada punto es el promedio de las medias de las tres semillas, con igual peso. Las barras muestran la **desviación estándar muestral entre esas tres medias**, no la dispersión de las 96 ejecuciones ni un intervalo de confianza. Con una sola semilla, como en las comprobaciones pequeñas, no se estima dispersión entre semillas. Los CSV por semilla conservan media, desviación, mínimo, Q1, mediana, Q3 y máximo con la convención de `uhr`. Las 32 repeticiones no son arreglos independientes ni garantizan significancia estadística.
+
+Las figuras usan milisegundos para construcción, mantenimiento y ciclos dinámicos;
+nanosegundos para consultas; y MiB para memoria. Los CSV conservan nanosegundos
+y bytes, respectivamente. La conversión de unidades no cambia las mediciones.
 
 ---
 
@@ -113,36 +149,17 @@ Desde el directorio `Boletin_04/`:
 
 | Comando | Acción |
 | :--- | :--- |
-| `make all` | Compila con C++20 y `-O3 -march=native`, ejecuta el piloto, valida el presupuesto, corre la batería oficial y memoria, genera gráficos, compila el informe y limpia la compilación incluso ante fallos. Es también la acción de `make`. |
+| `make all` | Compila con C++20 y `-O3 -march=native`, ejecuta el piloto, valida el presupuesto, corre la batería oficial y memoria, genera gráficos PNG y limpia la compilación incluso ante fallos. Es también la acción de `make`. No genera PDF; el informe se compila aparte con `make report`. |
 | `make build` | Compila ambos ejecutables en `bin/`, sin ejecutar experimentos. |
 | `make pilot` | Compila y recorre la misma matriz con cuatro repeticiones para estimar la duración. |
 | `make run_all PILOT=ruta` | Compila y ejecuta la batería oficial, memoria y gráficos utilizando un piloto compatible aprobado. |
-| `make plot_session SESSION=ruta` | Valida una sesión completa y regenera sus tablas y gráficos oficiales, sin repetir mediciones. |
+| `make plot_session SESSION=ruta` | Valida una sesión oficial completa, regenera sus tablas y gráficos y los publica por experimento, sin repetir mediciones. |
 | `make plot PLOT_ARGS='--help'` | Muestra las opciones del graficador genérico; `make plot_generic` es su alias. |
 | `make check` | Comprueba encabezados, generadores, RMQ, actualizaciones, sanitizadores y pipeline pequeño en temporales que se eliminan al terminar. |
 | `make report` | Compila `Boletin04.tex` con Tectonic y produce `report/Boletin04.pdf`. |
 | `make clean` | Elimina los ejecutables y archivos de compilación conocidos; conserva fuentes, CSV, gráficos e informe. |
 | `make help` | Muestra los comandos principales. |
 
-`bin/` es temporal: contiene ejecutables, dependencias y configuración de compilación. Se retira al finalizar `make all` o ejecutar `make clean`, si queda vacía. `make build`, `make pilot`, `make check` y `make run_all` conservan los binarios para poder reutilizarlos. `make -n all` no produce efectos. Las comprobaciones no dejan datos simulados en `data/`; se evita generar cachés Python y la caché de Matplotlib del lanzador es temporal.
-
-La orquestación se realiza en **Bash**, con `common.sh` y scripts de entrada como en el boletín 3. Se usa `flock` desde la compilación hasta la limpieza de `make all`. No iniciar ejecuciones concurrentes. La afinidad predeterminada es `CPU_CORE=2`; el núcleo debe pertenecer a la afinidad permitida. No se cambia silenciosamente: cualquier ajuste debe registrarse también en el informe.
-
-Sin `PILOT`, `make all` genera uno y utiliza automáticamente su ruta; con `PILOT=ruta`, lo reutiliza si es compatible. El piloto debe coincidir en parámetros, fuentes, binarios, compilador, equipo y versiones de Python y bibliotecas.
-```bash
-make all CPU_CORE=2
-
-# Ejecución por etapas
-make pilot CPU_CORE=2
-make run_all CPU_CORE=2 PILOT=data/ruta-del-piloto
-
-# Ajustes previos al piloto que deben justificarse en el informe
-make all BENCH_ARGS='--sizes 1000,4000,16000 --cycles 5'
-```
-
-`BENCH_ARGS` permite configurar `--sizes`, `--seeds`, `--cycles`, `--dynamic-queries`, `--static-queries`, `--target-ns`, `--max-batch`, `--data-root` y `--timeout-seconds`. Los ajustes deben ser idénticos al generar y reutilizar el piloto. No usar el perfil de comprobación como resultado oficial.
-
-Se requiere Linux, Bash, GCC con C++20, Make, `taskset`, `flock`, `timeout` y Python con NumPy, pandas y Matplotlib. Tectonic compila el informe. Make utiliza `../.venv` si existe y permite elegir otro intérprete con `PYTHON`. También se pueden invocar los scripts tras compilar, por ejemplo `PYTHON=../.venv/bin/python3 bash benchmarks/run_pilot.sh --cpu-core 2`. El graficador genérico conserva mediana e intervalo intercuartílico; no sustituye al analizador oficial de sesiones.
 
 ---
 

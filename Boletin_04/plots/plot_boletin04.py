@@ -78,9 +78,6 @@ def render(summary, args):
             destination = args.output_dir / f"{filename}.png"
             progress.show("Guardando " + destination.name)
             figure.savefig(destination)
-            if args.pdf:
-                progress.show("Guardando " + filename + ".pdf")
-                figure.savefig(args.output_dir / f"{filename}.pdf")
         finally:
             plt.close(figure)
         progress.advance(str(destination))
@@ -101,7 +98,6 @@ def main(argv=None):
     parser.add_argument("--ylabel")
     parser.add_argument("--title")
     parser.add_argument("--output-dir", type=Path, default=BASE / "plots" / "generated")
-    parser.add_argument("--pdf", action="store_true", help="Guardar PDF además de PNG")
     args = parser.parse_args(argv)
     try:
         progress = Progress(2, "Lectura y resumen")

@@ -1,0 +1,108 @@
+% Fuentes plot_summary csv y memory_plot_summary csv de cada experimento
+% Redondeo posterior a la conversion de unidades
+\subsection{Resumen numérico de tiempos y memoria}
+
+Se presentan cuatro tablas con todos los tamaños medidos. Construcción y
+mantenimiento comparten las filas de \(n\), sin mezclar sus mediciones.
+Los tiempos se expresan como media \(\pm\) desviación estándar muestral
+entre las tres medias por semilla, con igual peso. Cada media por semilla
+procede de 32 repeticiones: no es la desviación de 96 ejecuciones agrupadas
+ni un intervalo de confianza. La variación dentro de cada semilla se
+conserva en \texttt{summary.csv}.
+
+\begingroup
+\small
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.25}
+
+\begin{table}[!ht]
+    \centering
+    \caption{Experimentos 1 y 3: construcción inicial y mantenimiento por cambio.}
+    \label{tab:res-construccion}
+    \label{tab:res-mantenimiento}
+    \begin{tabular}{@{}rcccc@{}}
+        \toprule
+        & \multicolumn{2}{c}{Construcción inicial} & \multicolumn{2}{c}{Mantenimiento} \\
+        \cmidrule(lr){2-3}\cmidrule(l){4-5}
+        Elementos & Sparse Table & Segment Tree & Sparse Table & Segment Tree \\
+        \(n\) & [ms] & [ms] & [ms] & [\(\mu\)s] \\
+        \midrule
+        1.000 & \(0{,}090 \pm 0{,}003\) & \(0{,}025 \pm 0{,}001\) & \(0{,}087 \pm 0{,}003\) & \(0{,}340 \pm 0{,}015\) \\
+        4.000 & \(0{,}444 \pm 0{,}042\) & \(0{,}095 \pm 0{,}010\) & \(0{,}437 \pm 0{,}047\) & \(0{,}384 \pm 0{,}039\) \\
+        16.000 & \(5{,}317 \pm 0{,}356\) & \(0{,}550 \pm 0{,}047\) & \(2{,}733 \pm 0{,}221\) & \(0{,}446 \pm 0{,}041\) \\
+        64.000 & \(27{,}058 \pm 1{,}060\) & \(2{,}551 \pm 0{,}156\) & \(19{,}841 \pm 0{,}862\) & \(0{,}596 \pm 0{,}005\) \\
+        256.000 & \(97{,}741 \pm 3{,}915\) & \(8{,}775 \pm 0{,}011\) & \(86{,}037 \pm 1{,}489\) & \(0{,}716 \pm 0{,}010\) \\
+        1.000.000 & \(359{,}880 \pm 44{,}177\) & \(33{,}953 \pm 0{,}419\) & \(355{,}673 \pm 55{,}479\) & \(0{,}831 \pm 0{,}026\) \\
+        \bottomrule
+    \end{tabular}
+    \par\smallskip
+    \begin{minipage}{\linewidth}
+        \footnotesize
+        El mantenimiento compara reconstruir Sparse Table con \texttt{update}
+        de Segment Tree. Solo esta última columna está en microsegundos.
+    \end{minipage}
+\end{table}
+
+\begin{table}[!ht]
+    \centering
+    \caption{Experimento 2: tiempo por consulta estática con \(n=10^6\).}
+    \label{tab:res-consultas-estaticas}
+    \begin{tabular}{@{}rcc@{}}
+        \toprule
+        Rango & Sparse Table & Segment Tree \\
+        \(k\) & [ns] & [ns] \\
+        \midrule
+        1 & \(21{,}436 \pm 0{,}199\) & \(32{,}395 \pm 0{,}938\) \\
+        8 & \(22{,}387 \pm 0{,}752\) & \(170{,}172 \pm 5{,}207\) \\
+        63 & \(30{,}239 \pm 1{,}315\) & \(352{,}761 \pm 2{,}321\) \\
+        511 & \(26{,}714 \pm 1{,}720\) & \(507{,}993 \pm 11{,}615\) \\
+        500.000 & \(30{,}814 \pm 3{,}387\) & \(910{,}696 \pm 26{,}032\) \\
+        1.000.000 & \(14{,}765 \pm 0{,}336\) & \(114{,}839 \pm 1{,}023\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\clearpage
+\begin{table}[!ht]
+    \centering
+    \caption{Experimento 4: tiempo por ciclo de un cambio y 1.000 consultas.}
+    \label{tab:res-ciclo-dinamico}
+    \begin{tabular}{@{}rcc@{}}
+        \toprule
+        Elementos & Sparse Table & Segment Tree \\
+        \(n\) & [ms] & [ms] \\
+        \midrule
+        1.000 & \(0{,}105 \pm 0{,}004\) & \(0{,}156 \pm 0{,}003\) \\
+        4.000 & \(0{,}457 \pm 0{,}049\) & \(0{,}182 \pm 0{,}018\) \\
+        16.000 & \(2{,}772 \pm 0{,}222\) & \(0{,}218 \pm 0{,}015\) \\
+        64.000 & \(19{,}889 \pm 0{,}864\) & \(0{,}284 \pm 0{,}005\) \\
+        256.000 & \(86{,}090 \pm 1{,}488\) & \(0{,}332 \pm 0{,}007\) \\
+        1.000.000 & \(355{,}736 \pm 55{,}485\) & \(0{,}387 \pm 0{,}003\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+    \centering
+    \caption{Memoria retenida y pico total durante el mantenimiento.}
+    \label{tab:res-memoria}
+    \begin{tabular}{@{}rrrrr@{}}
+        \toprule
+        & \multicolumn{2}{c}{Sparse Table} & \multicolumn{2}{c}{Segment Tree} \\
+        \cmidrule(lr){2-3}\cmidrule(l){4-5}
+        Elementos & Retenida & Pico total & Retenida & Pico total \\
+        \(n\) & [MiB] & [MiB] & [MiB] & [MiB] \\
+        \midrule
+        1.000 & 0{,}15 & 0{,}32 & 0{,}03 & 0{,}03 \\
+        4.000 & 0{,}73 & 1{,}53 & 0{,}12 & 0{,}12 \\
+        16.000 & 3{,}42 & 7{,}08 & 0{,}49 & 0{,}49 \\
+        64.000 & 15{,}63 & 32{,}23 & 1{,}95 & 1{,}95 \\
+        256.000 & 70{,}31 & 144{,}53 & 7{,}81 & 7{,}81 \\
+        1.000.000 & 305{,}18 & 625{,}61 & 30{,}52 & 30{,}52 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\endgroup
+
+\clearpage

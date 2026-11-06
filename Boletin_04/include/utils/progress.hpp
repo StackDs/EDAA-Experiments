@@ -4,19 +4,28 @@
 #include <chrono>
 #include <cstddef>
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <unistd.h>
 
 namespace bench {
 // Adaptado de la barra uhr de los boletines 02 y 03
 // https://github.com/leonardlover
+inline void display_progress(std::size_t actual, std::size_t total) {
+    constexpr std::size_t width = 60;
+    const auto filled = width * actual / total;
+    std::cout << '\r' << '[';
+    for (std::size_t i = 0; i < width; ++i)
+        std::cout << (i < filled ? '=' : ' ');
+    std::cout << "] " << 100 * actual / total << "%  " << actual << '/' << total;
+    if (actual == total) std::cout << '\n';
+    std::cout << std::flush;
+}
+
 class Progress {
     using Clock = std::chrono::steady_clock;
-    std::size_t actual_ = 0, total_, previous_width_ = 0;
+    std::size_t actual_ = 0, total_;
     std::string label_, context_;
     Clock::time_point start_ = Clock::now(), last_ = start_;
-    bool terminal_ = isatty(STDOUT_FILENO), open_line_ = false;
+    bool open_line_ = false;
 
 public:
     Progress(std::size_t total, const std::string &label) : total_(total), label_(label) {
@@ -27,25 +36,20 @@ public:
     void show(const std::string &detail, bool force = false) {
         const auto now = Clock::now();
         // Limita la salida fuera de los intervalos medidos
-        if (!force && actual_ != total_ && now - last_ < std::chrono::milliseconds(terminal_ ? 200 : 1000)) return;
+        if (!force && actual_ != total_ && now - last_ < std::chrono::milliseconds(200)) return;
         last_ = now;
-        constexpr std::size_t width = 30;
-        const auto filled = total_ ? width * actual_ / total_ : width;
-        const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now - start_).count();
-        std::ostringstream line;
-        line << '[' << std::string(filled, '=') << std::string(width - filled, ' ')
-             << "] " << (total_ ? 100 * actual_ / total_ : 100) << "% " << actual_ << '/' << total_
-             << " | " << seconds / 60 << "m " << seconds % 60 << "s | " << label_;
-        if (!context_.empty()) line << " | " << context_;
-        line << " | " << detail;
-        const auto text = line.str();
-        if (terminal_) std::cout << '\r';
-        std::cout << text;
-        if (terminal_ && previous_width_ > text.size()) std::cout << std::string(previous_width_ - text.size(), ' ');
-        previous_width_ = text.size();
-        open_line_ = terminal_ && actual_ != total_;
-        if (!open_line_) std::cout << '\n';
-        std::cout << std::flush;
+        if (force) {
+            if (open_line_) std::cout << '\n';
+            std::cout << label_;
+            if (!context_.empty()) std::cout << " | " << context_;
+            std::cout << " | " << detail << '\n';
+        }
+        display_progress(actual_, total_);
+        open_line_ = actual_ != total_;
+        if (!open_line_) {
+            const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now - start_).count();
+            std::cout << label_ << " | " << detail << " | " << seconds / 60 << "m " << seconds % 60 << "s\n" << std::flush;
+        }
     }
     void advance(const std::string &detail) {
         actual_ = std::min(actual_ + 1, total_);

@@ -1,6 +1,5 @@
 """Barra basada en la plantilla uhr de los boletines 02 y 03."""
 
-import sys
 import time
 
 
@@ -10,22 +9,23 @@ class Progress:
             raise ValueError("El total de progreso debe ser positivo")
         self.total, self.label, self.actual = total, label, 0
         self.start = time.monotonic()
-        self.previous_width = 0
+        self.previous_actual = None
+        print("\n" + label, flush=True)
         self.show("Inicio")
 
     def show(self, detail):
         # https://github.com/leonardlover
-        width = 30
+        if self.previous_actual == self.actual:
+            return
+        width = 60
         filled = width * self.actual // self.total
         seconds = int(time.monotonic() - self.start)
-        text = (f"[{'=' * filled}{' ' * (width - filled)}] "
-                f"{100 * self.actual // self.total}% {self.actual}/{self.total} | "
-                f"{seconds // 60}m {seconds % 60}s | {self.label} | {detail}")
-        terminal = sys.stdout.isatty()
-        padding = " " * max(0, self.previous_width - len(text)) if terminal else ""
-        print(("\r" if terminal else "") + text + padding,
-              end="" if terminal and self.actual < self.total else "\n", flush=True)
-        self.previous_width = len(text)
+        text = (f"\r[{'=' * filled}{' ' * (width - filled)}] "
+                f"{100 * self.actual // self.total}%  {self.actual}/{self.total}")
+        print(text, end="\n" if self.actual == self.total else "", flush=True)
+        self.previous_actual = self.actual
+        if self.actual == self.total:
+            print(f"{self.label} | {detail} | {seconds // 60}m {seconds % 60}s", flush=True)
 
     def advance(self, detail):
         if self.actual == self.total:

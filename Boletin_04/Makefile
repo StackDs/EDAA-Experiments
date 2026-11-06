@@ -25,10 +25,10 @@ all:
 	flock -n 9 || { echo 'Ya hay otra preparacion o medicion activa'; exit 1; }; \
 	cleanup() { \
 		local status=$$?; \
-		display_progress "$$FLOW_DONE" 4 "$$FLOW_START_CS" 'Flujo completo | Limpieza de compilacion'; \
+		display_progress "$$FLOW_DONE" 3 "$$FLOW_START_CS" 'Flujo completo | Limpieza de compilacion'; \
 		if $(MAKE) --no-print-directory clean; then \
 			if [[ $$status -eq 0 ]]; then \
-				display_progress 4 4 "$$FLOW_START_CS" 'Flujo completo | Resultados graficos e informe listos'; \
+				display_progress 3 3 "$$FLOW_START_CS" 'Flujo completo | Resultados y graficos PNG listos'; \
 			else echo "Flujo interrumpido con codigo $$status" >&2; fi; \
 		else \
 			if [[ $$status -eq 0 ]]; then status=1; fi; \
@@ -36,19 +36,16 @@ all:
 		exit "$$status"; \
 	}; \
 	trap cleanup EXIT; \
-	display_progress 0 4 "$$FLOW_START_CS" 'Flujo completo | Compilando ejecutables'; \
+	display_progress 0 3 "$$FLOW_START_CS" 'Flujo completo | Compilando ejecutables'; \
 	$(MAKE) --no-print-directory build; \
 	FLOW_DONE=1; \
-	display_progress 1 4 "$$FLOW_START_CS" 'Flujo completo | Piloto bateria memoria y graficos'; \
+	display_progress 1 3 "$$FLOW_START_CS" 'Flujo completo | Piloto bateria memoria y graficos'; \
 	BENCHMARK_LOCK_FD=9 PILOT="$(PILOT)" PYTHON="$(PYTHON)" \
 		bash benchmarks/run_all.sh --cpu-core "$(CPU_CORE)" $(BENCH_ARGS); \
-	FLOW_DONE=2; \
-	display_progress 2 4 "$$FLOW_START_CS" 'Flujo completo | Compilando informe'; \
-	$(MAKE) --no-print-directory report; \
-	FLOW_DONE=3
+	FLOW_DONE=2
 
 help:
-	@echo 'make all                    Compila ejecuta piloto bateria graficos informe y limpia'
+	@echo 'make all                    Compila ejecuta piloto bateria graficos PNG y limpia'
 	@echo 'make build                  Compila sin ejecutar experimentos'
 	@echo 'make check                  Verifica en temporales y los elimina'
 	@echo 'make pilot                  Estima la matriz con cuatro repeticiones'
@@ -86,7 +83,7 @@ plot:
 plot_generic: plot
 
 plot_session:
-	$(PYTHON) plots/plot_experiments.py --session "$(SESSION)" $(PLOT_ARGS)
+	$(PYTHON) plots/plot_experiments.py --session "$(SESSION)" --publish-root . $(PLOT_ARGS)
 
 report:
 	cd report && $(TECTONIC) Boletin04.tex

@@ -1,0 +1,54 @@
+\section{\textquestiondown Qué opción utilizar?}
+
+\textbf{Construcción y consultas estáticas.} Los resultados respaldan las
+dos primeras hipótesis: Segment Tree se construyó más rápido en todos los
+tamaños, mientras que Sparse Table presentó menores tiempos por consulta
+en las seis longitudes evaluadas con \(n=10^6\). Para ese tamaño, construir
+costó 33,953 ms y 359,880 ms, respectivamente
+(tabla~\ref{tab:res-construccion}); en rangos de longitud 511, consultar
+costó 507,993 ns y 26,714 ns (tabla~\ref{tab:res-consultas-estaticas}).
+Esto es consistente con la preparación \(\Theta(n)\) del árbol frente a
+\(\Theta(n\log n)\) de la tabla, y con las consultas RMQ \(\Theta(1)\)
+de esta última. No implica que toda consulta del árbol cueste
+\(\Theta(\log n)\): los rangos unitarios son constantes en ambas
+estructuras. Tampoco demuestra que la tabla amortice su preparación con
+cualquier cantidad de consultas.
+
+\textbf{Mantenimiento y carga dinámica.} La tercera hipótesis también
+queda respaldada: actualizar Segment Tree fue más barato que reconstruir
+Sparse Table en todos los tamaños. Con \(n=10^6\), los tiempos fueron
+0,831~\(\mu\)s y 355,673 ms por cambio
+(tabla~\ref{tab:res-mantenimiento}). La cuarta hipótesis se cumple para
+la carga estudiada: con un cambio y 1.000 consultas por ciclo, el árbol
+ganó desde 4.000 elementos; con un millón, necesitó 0,387 ms frente a
+355,736 ms. Sin embargo, Sparse Table ganó con 1.000 elementos
+(0,105 ms frente a 0,156 ms), por lo que no existe un ganador universal
+(tabla~\ref{tab:res-ciclo-dinamico}). El cruce observado entre 1.000 y
+4.000 elementos no determina un umbral exacto ni se extrapola a otras cargas.
+
+\textbf{Espacio utilizado.} La quinta hipótesis queda respaldada por
+las reservas medidas: con un millón de elementos, Sparse Table retuvo
+305,18 MiB frente a 30,52 MiB del árbol, unas diez veces más. Además,
+su pico al reconstruir alcanzó 625,61 MiB por la coexistencia de versiones
+y reservas temporales; Segment Tree mantuvo 30,52 MiB al actualizar
+(tabla~\ref{tab:res-memoria}). Son asignaciones de las estructuras,
+no la memoria residente total del proceso.
+
+\textbf{Ventajas y desventajas.} La principal ventaja de Sparse Table
+es responder RMQ en tiempo constante y con menores tiempos observados
+por consulta; sus desventajas son la preparación y el espacio
+\(\Theta(n\log n)\), junto con la ausencia de actualización nativa en
+la implementación evaluada, que obliga a reconstruir en este estudio.
+Segment Tree ofrece construcción y espacio \(\Theta(n)\), además de
+actualizaciones puntuales \(\Theta(\log n)\) sin nuevas reservas.
+Su desventaja es un mayor costo de consulta, con peor caso
+\(\Theta(\log n)\), que puede acumularse en cargas intensivas de lectura.
+
+\textbf{Recomendación.} Conviene Sparse Table para datos inmutables y
+memoria suficiente, cuando el ahorro en muchas consultas amortice su preparación.
+Conviene Segment Tree si hay cambios frecuentes, memoria limitada o pocas
+consultas que no compensen construir la tabla. La decisión debe considerar
+construcción, mantenimiento y consultas en conjunto, no solo la operación
+más rápida de cada estructura. Estas conclusiones describen las mediciones
+y son compatibles con las hipótesis teóricas; no constituyen una prueba
+de complejidad asintótica ni de significancia estadística.

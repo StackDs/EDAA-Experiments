@@ -4,7 +4,9 @@
 import argparse
 import json
 from pathlib import Path
+import shutil
 import sys
+import tempfile
 
 import matplotlib
 matplotlib.use("Agg")
@@ -15,6 +17,12 @@ import pandas as pd
 from progress_utils import Progress
 
 EXPERIMENTS = ["construction", "static_queries", "maintenance", "dynamic_queries"]
+EXPERIMENT_DIRS = {
+    "construction": "experimento_1_construccion",
+    "static_queries": "experimento_2_consultas_estaticas",
+    "maintenance": "experimento_3_mantenimiento",
+    "dynamic_queries": "experimento_4_consultas_dinamicas",
+}
 METHODS = ["sparse_table", "segment_tree"]
 KEY = ["method", "n", "k", "range", "seed", "run", "cycle"]
 
@@ -148,7 +156,32 @@ def quartiles(values):
     return values[0], q1, np.median(values), q3, values[-1]
 
 
+def dynamic_cycles(samples):
+    keys = ["method", "n", "seed", "run", "cycle", "input_sha256", "session_id", "config_id"]
+    maintenance = samples[samples.experiment == "maintenance"]
+    queries = samples[samples.experiment == "dynamic_queries"]
+    require(not maintenance.duplicated(keys).any(), "Mantenimiento duplicado en el ciclo")
+    require(not queries.duplicated(keys + ["k", "range"]).any(), "Consultas duplicadas en el ciclo")
+    require((maintenance.operations == 1).all(), "El ciclo debe contener un solo cambio")
+    maintenance = maintenance[keys + ["elapsed_ns"]].rename(columns={"elapsed_ns": "maintenance_ns"})
+    queries = queries.groupby(keys, as_index=False).agg(query_ns=("elapsed_ns", "sum"), queries=("operations", "sum"))
+    cycles = maintenance.merge(queries, on=keys, how="outer", validate="one_to_one", indicator=True)
+    require(not cycles.empty and (cycles._merge == "both").all(), "Ciclo sin mantenimiento o consultas compatibles")
+    cycles = cycles.drop(columns="_merge")
+    cycles["elapsed_ns"] = cycles.maintenance_ns + cycles.query_ns
+    cycles["time_ns"] = cycles.elapsed_ns
+    cycles["operations"] = 1
+    cycles["updates"] = 1
+    cycles["experiment"] = "dynamic_queries"
+    cycles["k"] = 0
+    cycles["range"] = "cycle"
+    return cycles
+
+
 def summarize(samples):
+    # Suma el mantenimiento una sola vez antes de resumir cada repeticion
+    cycles = dynamic_cycles(samples)
+    samples = pd.concat([samples[samples.experiment != "dynamic_queries"], cycles], ignore_index=True)
     keys = ["experiment", "method", "n", "k", "range", "seed"]
     per_run = samples.groupby(keys + ["run"], as_index=False).agg(elapsed_ns=("elapsed_ns", "sum"), operations=("operations", "sum"))
     per_run["time_ns"] = per_run.elapsed_ns / per_run.operations
@@ -162,69 +195,200 @@ def summarize(samples):
     return per_run, pd.DataFrame(rows)
 
 
-def render(summary, memory, destination):
-    plt.rcParams.update({"font.family": "serif", "font.size": 10, "axes.grid": True, "grid.alpha": .3,
-                          "figure.figsize": (8, 5), "savefig.bbox": "tight", "savefig.dpi": 160})
-    by_size = summary.groupby(["experiment", "range"])
-    by_range = summary[summary.experiment.isin(["static_queries", "dynamic_queries"])].groupby(["experiment", "n"])
-    progress = Progress(by_size.ngroups + by_range.ngroups + 3, "Graficos PNG y PDF")
+def average_seeds(frame, keys, columns):
+    require(not frame.duplicated(keys + ["seed"]).any(), "Resumen duplicado por semilla")
+    aggregations = {"seeds": ("seed", "nunique")}
+    for column in columns:
+        aggregations[column] = (column, "mean")
+        aggregations[column + "_between_seed_sd"] = (column, "std")
+    return frame.groupby(keys, as_index=False).agg(**aggregations)
 
-    def figure(frame, x, y, title, filename, error=False):
+
+def plot_summaries(summary, memory):
+    times = average_seeds(summary, ["experiment", "method", "n", "k", "range"], ["t_mean"])
+    space = average_seeds(memory, ["method", "phase", "n"], ["index_bytes", "total_peak_bytes"])
+    return times, space
+
+
+def render(summary, memory, destination, queries_per_cycle=None):
+    summary, memory = plot_summaries(summary, memory)
+    plt.rcParams.update({"font.family": "serif", "font.size": 11, "axes.grid": True,
+                          "axes.grid.axis": "y", "grid.alpha": .22, "axes.spines.top": False,
+                          "axes.spines.right": False, "figure.figsize": (8, 5.3),
+                          "savefig.bbox": "tight", "savefig.dpi": 160})
+    by_size = summary.groupby(["experiment", "range"])
+    by_range = summary[summary.experiment == "static_queries"].groupby(["experiment", "n"])
+    progress = Progress(by_size.ngroups + by_range.ngroups + 3, "Graficos PNG")
+
+    def figure(frame, x, y, title, filename, subtitle="", unit="Tiempo (ns)", divisor=1):
         fig, ax = plt.subplots()
         try:
-            markers = {seed: ["o", "s", "^"][i % 3] for i, seed in enumerate(sorted(frame.seed.unique()))}
-            for (method, seed), group in frame.groupby(["method", "seed"]):
+            styles = {"sparse_table": ("Sparse Table", "#0072B2", "o"),
+                      "segment_tree": ("Segment Tree", "#D55E00", "s")}
+            for method, group in frame.groupby("method"):
                 group = group.sort_values(x)
-                color = "C0" if method == "sparse_table" else "C1"
-                label = f"{method} semilla {seed}"
-                if error:
-                    mean, sd = group[y].to_numpy(), group.t_stdev.to_numpy()
-                    ax.errorbar(group[x], mean, yerr=[np.minimum(mean, sd), sd], marker=markers[seed], capsize=3, color=color, label=label)
-                else:
-                    ax.plot(group[x], group[y], marker=markers[seed], color=color, label=label)
-            ax.set(xlabel="Elementos n" if x == "n" else "Longitud del rango k", ylabel="ns por operacion" if error else "Bytes solicitados", title=title)
+                label, color, marker = styles[method]
+                mean = group[y].to_numpy() / divisor
+                sd = group[y + "_between_seed_sd"].to_numpy() / divisor
+                # Una sola semilla no permite estimar dispersion entre semillas
+                errors = None if group.seeds.eq(1).all() else [np.minimum(mean, sd), sd]
+                ax.errorbar(group[x], mean, yerr=errors, marker=marker, markersize=6,
+                            linewidth=1.8, elinewidth=1, capsize=4, color=color, label=label)
+            ax.set(xlabel="Elementos del arreglo (n)" if x == "n" else "Longitud del rango (k)", ylabel=unit)
+            fig.suptitle(title, fontsize=15, y=.98)
+            ax.set_title(subtitle, fontsize=10, color="#555555", pad=12)
             ax.set_xscale("log")
             ax.set_ylim(bottom=0)
-            ax.legend(fontsize=7)
-            for extension in ["png", "pdf"]:
-                progress.show("Guardando " + filename + '.' + extension)
-                fig.savefig(destination / f"{filename}.{extension}")
+            ax.legend(fontsize=10, frameon=False)
+            seeds = int(frame.seeds.iloc[0])
+            require(frame.seeds.eq(seeds).all(), "Cantidad de semillas distinta entre puntos")
+            note = (f"Media de {seeds} medias por semilla · Barras: DE muestral entre esas medias (no IC)"
+                    if seeds > 1 else "Una semilla · Sin estimación de dispersión entre semillas")
+            fig.text(.5, .015, note, ha="center", fontsize=9, color="#555555")
+            fig.subplots_adjust(bottom=.18, top=.83)
+            progress.show("Guardando " + filename + '.png')
+            fig.savefig(destination / f"{filename}.png")
         finally:
             plt.close(fig)
-        progress.advance(filename + " PNG y PDF guardados")
+        progress.advance(filename + " PNG guardado")
 
-    titles = {"construction": "Construccion inicial", "static_queries": "Consultas estaticas",
-              "maintenance": "Mantenimiento dinamico", "dynamic_queries": "Consultas dinamicas"}
+    titles = {"construction": "Construcción inicial", "static_queries": "Consultas estáticas",
+              "maintenance": "Mantenimiento dinámico", "dynamic_queries": "Costo dinámico por ciclo"}
+    number = lambda value: f"{int(value):,}".replace(",", ".")
     for (experiment, range_name), frame in by_size:
-        figure(frame, "n", "t_mean", f"{titles[experiment]} rango {range_name}\nMedia y desviacion estandar",
-               f"{experiment}_{range_name}", True)
+        if experiment == "dynamic_queries":
+            batch = f"{number(queries_per_cycle)} consultas" if queries_per_cycle is not None else "lote de consultas"
+            figure(frame, "n", "t_mean", titles[experiment], f"{experiment}_{range_name}",
+                   f"1 cambio + {batch} · Incluye reconstrucción o update", "Tiempo por ciclo (ms)", 1e6)
+        elif experiment == "construction":
+            figure(frame, "n", "t_mean", titles[experiment], f"{experiment}_{range_name}",
+                   "Mismos arreglos de entrada", "Tiempo por construcción (ms)", 1e6)
+        elif experiment == "maintenance":
+            figure(frame, "n", "t_mean", titles[experiment], f"{experiment}_{range_name}",
+                   "Reconstrucción de Sparse Table frente a update de Segment Tree", "Tiempo por cambio (ms)", 1e6)
+        else:
+            length = {"half": "Rango medio (k = ⌊n/2⌋)", "full": "Rango completo (k = n)"}.get(range_name, f"Longitud del rango k = {range_name}")
+            figure(frame, "n", "t_mean", titles[experiment], f"{experiment}_{range_name}", length, "Tiempo por consulta (ns)")
     for (experiment, n), frame in by_range:
-        figure(frame, "k", "t_mean", f"{titles[experiment]} n={n}\nMedia y desviacion estandar", f"{experiment}_ranges_{n}", True)
+        figure(frame, "k", "t_mean", titles[experiment], f"{experiment}_ranges_{n}",
+               f"Arreglo de {number(n)} elementos", "Tiempo por consulta (ns)")
     frame = memory[memory.phase == "construction"]
-    figure(frame, "n", "index_bytes", "Memoria retenida al construir", "memory_retained")
+    figure(frame, "n", "index_bytes", "Memoria retenida al construir", "memory_retained", unit="Memoria (MiB)", divisor=2**20)
     for phase in ["construction", "maintenance"]:
         frame = memory[memory.phase == "construction"] if phase == "construction" else memory[memory.phase != "construction"]
-        figure(frame, "n", "total_peak_bytes", f"Pico de asignaciones {phase}", f"memory_peak_{phase}")
+        title = "Pico de memoria durante la construcción" if phase == "construction" else "Pico de memoria durante el mantenimiento"
+        figure(frame, "n", "total_peak_bytes", title, f"memory_peak_{phase}", unit="Memoria (MiB)", divisor=2**20)
+
+
+def publish(session, root, metadata, memory, per_run, summary):
+    require(metadata["profile"] == "official", "Solo se publican resultados oficiales")
+    root = root.resolve()
+    progress = Progress(5, "Organizando CSV y graficos por experimento")
+    plot_summary, memory_summary = plot_summaries(summary, memory)
+    root.mkdir(parents=True, exist_ok=True)
+    # Prepara todos los archivos antes de reemplazar la publicacion anterior
+    with tempfile.TemporaryDirectory(prefix=".rmq-publish-", dir=root) as temporary:
+        staging = Path(temporary)
+        replacements = []
+        for experiment, directory in EXPERIMENT_DIRS.items():
+            data = staging / "data" / directory
+            plots = staging / "plots" / directory
+            data.mkdir(parents=True)
+            plots.mkdir(parents=True)
+            if experiment == "dynamic_queries":
+                shutil.copy2(session / "plots" / "dynamic_cycles.csv", data / "samples.csv")
+                shutil.copy2(session / "dynamic_queries.csv", data / "query_samples.csv")
+            else:
+                shutil.copy2(session / f"{experiment}.csv", data / "samples.csv")
+            summary[summary.experiment == experiment].to_csv(data / "summary.csv", index=False)
+            plot_summary[plot_summary.experiment == experiment].to_csv(data / "plot_summary.csv", index=False)
+            per_run[per_run.experiment == experiment].to_csv(data / "run_means.csv", index=False)
+            if experiment == "static_queries":
+                shutil.copy2(session / "calibration.csv", data / "calibration.csv")
+            if experiment in ["construction", "maintenance"]:
+                selected = memory[memory.phase == "construction"] if experiment == "construction" else memory[memory.phase != "construction"]
+                selected.to_csv(data / "memory.csv", index=False)
+                selected_summary = memory_summary[memory_summary.phase == "construction"] if experiment == "construction" else memory_summary[memory_summary.phase != "construction"]
+                selected_summary.to_csv(data / "memory_plot_summary.csv", index=False)
+            names = [f"{experiment}_{name}" for name in summary[summary.experiment == experiment].range.unique()]
+            if experiment == "static_queries":
+                names += [f"{experiment}_ranges_{n}" for n in summary[summary.experiment == experiment].n.unique()]
+            if experiment == "construction":
+                names += ["memory_retained", "memory_peak_construction"]
+            elif experiment == "maintenance":
+                names += ["memory_peak_maintenance"]
+            for name in names:
+                source = session / "plots" / f"{name}.png"
+                require(source.is_file() and source.stat().st_size > 0, f"Falta el grafico {source}")
+                shutil.copy2(source, plots / source.name)
+            record = {"layout": "rmq-experiments-v1", "source_session": str(session.resolve()),
+                      "session_id": metadata["session_id"], "config_id": metadata["config_id"],
+                      "experiment": experiment,
+                      "analysis": "dynamic-cycle-sum-v1",
+                      "plot_aggregation": "equal-weight-seed-means-v1",
+                      "error_bars": "sample-standard-deviation-of-seed-means",
+                      "unit": "ns_per_cycle" if experiment == "dynamic_queries" else "ns_per_operation"}
+            (data / "session.json").write_text(json.dumps(metadata, indent=2) + "\n")
+            (data / "COMPLETE").write_text(metadata["config_id"] + "\n")
+            for category, prepared in [("data", data), ("plots", plots)]:
+                target = root / category / directory
+                if target.exists():
+                    marker = target / "publication.json"
+                    require(marker.is_file() and json.loads(marker.read_text()).get("layout") == record["layout"],
+                            f"La carpeta contiene archivos ajenos a esta publicacion: {target}")
+                (prepared / "publication.json").write_text(json.dumps(record, indent=2) + "\n")
+                replacements.append((prepared, target))
+            progress.advance(directory)
+        replaced = []
+        try:
+            for index, (prepared, target) in enumerate(replacements):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                backup = staging / f"backup-{index}"
+                if target.exists():
+                    target.rename(backup)
+                replaced.append((target, backup))
+                prepared.rename(target)
+        except OSError:
+            for target, backup in reversed(replaced):
+                if target.exists():
+                    shutil.rmtree(target)
+                if backup.exists():
+                    backup.rename(target)
+            raise
+    progress.advance("Publicacion completa")
+    print(f"CSV por experimento: {root / 'data' / 'experimento_*'}", flush=True)
+    print(f"Graficos por experimento: {root / 'plots' / 'experimento_*'}", flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", type=Path, required=True)
     parser.add_argument("--staged", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--publish-root", type=Path, help="Publica CSV en data y figuras en plots por experimento")
     args = parser.parse_args()
-    _, samples, memory = load_session(args.session, args.staged, progress=True)
-    progress = Progress(4, "Estadisticas y tablas")
+    metadata, samples, memory = load_session(args.session, args.staged, progress=True)
+    if args.publish_root:
+        require(metadata["profile"] == "official", "Solo se publican resultados oficiales")
+    progress = Progress(6, "Estadisticas y tablas")
     per_run, summary = summarize(samples)
     progress.advance("Estadisticas calculadas")
     destination = args.session / "plots"
     destination.mkdir(exist_ok=True)
+    dynamic_cycles(samples).to_csv(destination / "dynamic_cycles.csv", index=False)
+    progress.advance("dynamic_cycles.csv con mantenimiento y consultas guardado")
     per_run.to_csv(destination / "run_means.csv", index=False)
     progress.advance("run_means.csv guardado")
     summary.to_csv(destination / "summary.csv", index=False)
     progress.advance("summary.csv guardado")
     memory.to_csv(destination / "memory.csv", index=False)
     progress.advance("memory.csv guardado")
-    render(summary, memory, destination)
+    plot_summary, memory_summary = plot_summaries(summary, memory)
+    plot_summary.to_csv(destination / "plot_summary.csv", index=False)
+    memory_summary.to_csv(destination / "memory_plot_summary.csv", index=False)
+    progress.advance("Promedios y dispersion entre semillas guardados")
+    render(summary, memory, destination, metadata["protocol"]["dynamic_queries"])
+    if args.publish_root:
+        publish(args.session, args.publish_root, metadata, memory, per_run, summary)
     print(f"Validadas {len(samples)} muestras y {len(memory)} registros de memoria")
 
 

@@ -85,9 +85,15 @@ Se conservarán CSV crudos y resúmenes con \textbf{media, desviación estándar
 muestral, mínimo, Q1, mediana, Q3 y máximo}, usando la convención de cuartiles
 de \texttt{uhr}. Los diez ciclos se agregarán dentro de cada repetición,
 normalizando por operaciones, no como muestras independientes. Cada semilla
-conservará su resumen; las figuras mostrarán media y una desviación estándar,
-\textbf{no intervalos de confianza}. Las 32 repeticiones caracterizan la
-variabilidad, pero no garantizan significancia estadística.
+conservará su resumen. Las figuras mostrarán \textbf{dos curvas}, una por
+estructura: cada punto será la media de las tres medias por semilla, con
+igual peso, y las barras representarán la desviación estándar muestral entre
+esas tres medias, \textbf{no intervalos de confianza} ni la dispersión de 96
+ejecuciones independientes. Las 32 repeticiones caracterizan la variabilidad
+dentro de cada semilla, pero no garantizan significancia estadística.
+Los CSV conservarán nanosegundos y bytes; para facilitar la lectura se usarán
+milisegundos en construcción, mantenimiento y ciclos, nanosegundos por consulta
+y MiB en las figuras de memoria.
 
 
 
@@ -139,20 +145,28 @@ su actualización \(\Theta(\log n)\), frente a reconstruir Sparse Table
 en \(\Theta(n\log n)\); la diferencia debería crecer con \(n\).
 Se comparan estrategias de mantenimiento, no dos actualizaciones nativas.
 
-\subsubsection{Consultas en el escenario dinámico}
+\subsubsection{Costo dinámico de mantenimiento y consultas}
 
 \begin{itemize}
     \setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}
-    \item \textbf{Variables y controles:} estudiar \(n\) y \(k\) sobre
-    los mismos estados modificados, usando los lotes del recorrido anterior
-    con ambas estructuras ya actualizadas.
-    \item \textbf{Resultado:} tiempo por consulta después de cada cambio,
-    separado del mantenimiento y sin duplicar reconstrucciones.
+    \item \textbf{Variable y controles:} estudiar \(n\) con los mismos
+    cambios y lotes de 1.000 consultas repartidas entre longitudes.
+    \item \textbf{Resultado:} tiempo por ciclo, sumando el mantenimiento
+    y todos los lotes de consultas del mismo método, semilla y repetición.
+    Cada ciclo incluye una reconstrucción de Sparse Table o un
+    \texttt{update} de Segment Tree; ese costo se cuenta una sola vez.
+    Los diez ciclos se promedian dentro de cada repetición antes de calcular
+    los estadísticos entre las 32 repeticiones de cada semilla.
 \end{itemize}
-\textbf{Hipótesis.} Sparse Table conservará su consulta \(\Theta(1)\)
-tras reconstruirse; la ventaja dinámica de Segment Tree corresponde al menor
-mantenimiento, no necesariamente a consultar más rápido. El estado de caché
-puede alterar tiempos respecto del escenario estático, pero no estas cotas.
+La suma utiliza intervalos ya cronometrados y excluye la construcción inicial;
+no es una medición de extremo a extremo, pues generación, validación,
+escritura y liberación permanecen fuera del reloj. Se conserva el detalle
+de consultas para auditar sus componentes, pero no se interpreta como
+el costo completo del escenario dinámico.
+\textbf{Hipótesis.} Con 1.000 consultas por cambio, el menor costo de
+mantenimiento de Segment Tree debería dominar para arreglos grandes.
+Sparse Table podría compensar su reconstrucción en arreglos pequeños;
+no se presupone un ganador para todo tamaño.
 
 \subsubsection{Análisis del espacio utilizado}
 

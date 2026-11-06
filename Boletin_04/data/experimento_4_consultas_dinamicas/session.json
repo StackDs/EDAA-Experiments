@@ -1,0 +1,121 @@
+{
+  "protocol": {
+    "sizes": [
+      1000,
+      4000,
+      16000,
+      64000,
+      256000,
+      1000000
+    ],
+    "seeds": [
+      1729,
+      2718,
+      31415
+    ],
+    "cycles": 10,
+    "dynamic_queries": 1000,
+    "static_queries": 10000,
+    "target_ns": 5000000,
+    "max_batch": 1000000,
+    "cpu_core": 2,
+    "version": "rmq-v1",
+    "official_runs": 32,
+    "entry": "pair<int64_t,uint64_t>",
+    "ranges": [
+      "1",
+      "8",
+      "63",
+      "511",
+      "half",
+      "full"
+    ],
+    "generator": "mt19937_64-rejection-v1",
+    "quartiles": "uhr"
+  },
+  "config_id": "afa19573b228363a20f81155720bd99ab3b45bd3c4abe460d339ba3437727f2d",
+  "profile": "official",
+  "runs": 32,
+  "sources": {
+    "Makefile": "5ed942a396df61fe65d2313a4dbb1791fea495da045792b582042e413bcd5d98",
+    "benchmarks/common.sh": "604ddaeefb103bf4d2ad681984cf4fd3ab5aeb7e93ce85697561071975e93f82",
+    "benchmarks/progress.sh": "bd6d36814db960c96b6ff2334fa76aba6c883021b550194d9328cf67bc0ecc78",
+    "benchmarks/run_all.sh": "9fb172d7262a9e7ff692c7d7b56d8d63cd2e3e421488ca118a1535399c1f0c2d",
+    "benchmarks/run_pilot.sh": "ec70151e4d5abb8f16733e21304a2010942cc31ac08d735bd9001de045c98506",
+    "benchmarks/run_smoke.sh": "64127f58ba703cc2bf460223bf755c03e0413d3fbb4feb6e276734c8aa86ab47",
+    "include/range_queries/segment_tree.hpp": "2452c5e0a80dcca5c6d6da2096a866b6f8eceae9d85ab908cbe2a0c2f1587805",
+    "include/range_queries/sparse_table.hpp": "61f0febffc2e98234a4eef80c391be82346a56f9db8545656142e22f91cfbaee",
+    "include/utils/experiment_options.hpp": "6c91f8905ea96c22925aeba87312ae257eb616aa74e50a82ad57a1527afeb9e7",
+    "include/utils/measurement.hpp": "db8c43657fe68043676e6a5d2a72aa6605bd576dd7ef4d4eeda0883f419cfa30",
+    "include/utils/memory_tracking.hpp": "c2ed37dc12e64ff19ba3be4cadd595cf8bf2e8f39236406b4edfed6fdab20a95",
+    "include/utils/progress.hpp": "18ff60c0858f807464ea195aeb0cc46c310b1622c65a148ee5f0c863db0585ae",
+    "include/utils/rmq_inputs.hpp": "8d76cd2142edbb89bafcb6f39a654afc84c33cb8af5113383e55a43f727576df",
+    "include/utils/rmq_workload.hpp": "0891b2b023a48c019e8f619fa005bccb45e2356dda0563bb10c6bf706fc0aa6c",
+    "include/utils/sha256.hpp": "21ca81dadcffe64f2e470f3000b3ac68655621f598c26cecb9b220955c42cfa5",
+    "plots/plot_boletin04.py": "db72f125a6b272230740af53f62d48ab8551dc490400d58db8e8be122d64c6d2",
+    "plots/plot_experiments.py": "7967e7f701ee75d83c04833baa5798ea3c663726f6242bce15d7164f5c3b37da",
+    "plots/plot_utils.py": "0e36b29d8549a44ee20c1420a878e40e6a9410d981feda90a2f6b7ad22836be9",
+    "plots/progress_utils.py": "757ccef30ccb01949edd444f98d742e6977ff923b2a6f107f85ebeb71234ba3d",
+    "scripts/build_config.py": "b01eca9c7fa6a051fdfda1883ee7b93b3c4d27acc997cef2ce17aaf461b6cffa",
+    "scripts/check.py": "4f98457e0b20fcbd07243ab7f6f3373ee280cefffe08df3f8a6bcf62fbfe1161",
+    "scripts/session_metadata.py": "6a95b10bfb678a4047cb22350d7545c0661961eec40e876eb117c68901b27a39",
+    "src/bench_memory.cpp": "54b3e3ead6282ff91ec1ebbc7d1f696031452ded7b46e53a3a9a19cff80d87aa",
+    "src/bench_rmq.cpp": "e23f27ee8b01bfcc68ed899055f5dac66667a8b9b2cd75ac0b6100191ce31e4c",
+    "src/memory_tracking.cpp": "16734441d281860d879718458a5240c3a2601dda510db7536c2a1e8e1f20f8bd"
+  },
+  "binaries": {
+    "bench_rmq": "88f41010e352b6476669f79e7525d22e1523c5823099e272be30a9b59fc2a822",
+    "bench_memory": "5913b7f2b734ce3788cba78fdb07f769b477f3f75a4aba697fabddc9e41b4b92"
+  },
+  "build": {
+    "compiler_command": "g++",
+    "compiler": "g++ (GCC) 16.2.1 20260810",
+    "flags": "-std=c++20 -O3 -march=native -Wall -Wextra -Wpedantic -Iinclude"
+  },
+  "runtime": {
+    "hostname": "stack",
+    "platform": "Linux-7.2.14-arch1-1-x86_64-with-glibc2.44",
+    "machine": "x86_64",
+    "python": "3.14.9 (main, Oct 25 2026, 14:52:47) [GCC 16.2.1 20260810]",
+    "libc": [
+      "glibc",
+      "2.44"
+    ],
+    "packages": {
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2"
+    },
+    "cpu": {
+      "vendor_id": "GenuineIntel",
+      "cpu family": "6",
+      "model": "186",
+      "model name": "13th Gen Intel(R) Core(TM) i5-13420H",
+      "stepping": "2",
+      "microcode": "0x6134"
+    }
+  },
+  "platform": "Linux-7.2.14-arch1-1-x86_64-with-glibc2.44",
+  "machine": "x86_64",
+  "cpu_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "cpuinfo": "processor\t: 0\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 186\nmodel name\t: 13th Gen Intel(R) Core(TM) i5-13420H\nstepping\t: 2\nmicrocode\t: 0x6134\ncpu MHz\t\t: 776.971\ncache size\t: 12288 KB\nphysical id\t: 0\nsiblings\t: 12\ncore id\t\t: 0\ncpu cores\t: 8\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 32\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves split_lock_detect user_shstk avx_vnni dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req hfi vnmi umip pku ospke waitpkg gfni vaes vpclmulqdq rdpid movdiri movdir64b fsrm md_clear serialize arch_lbr ibt flush_l1d arch_capabilities\nvmx flags\t: vnmi preemption_timer posted_intr invvpid ept_x_only ept_ad ept_1gb flexpriority apicv tsc_offset vtpr mtf vapic ept vpid unrestricted_guest vapic_reg vid ple shadow_vmcs ept_violation_ve ept_mode_based_exec tsc_scaling usr_wait_pause\nbugs\t\t: spectre_v1 spectre_v2 spec_store_bypass swapgs eibrs_pbrsb rfds bhi spectre_v2_user vmscape\nbogomips\t: 5222.40\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 39 bits physical, 48 bits virtual\npower management:",
+  "git_revision": "a7da057cfd65ca84dc55d7a87ef8322a435476cf",
+  "git_status": " M Makefile\n M README.md\n M benchmarks/common.sh\n M benchmarks/progress.sh\n M include/utils/progress.hpp\n M plots/plot_boletin04.py\n M plots/plot_experiments.py\n M plots/progress_utils.py\n M report/Boletin04.pdf\n M report/sections/01_introduccion.tex\n M report/sections/04_metodologia.tex\n M scripts/check.py\n?? data/pilot-20261106-185352-bH0OSOfJ/\n",
+  "session_id": "official-20261106-185540-Gmo0WTDo",
+  "created": "2026-11-06T21:55:40.866152+00:00",
+  "elapsed_seconds": 606.98,
+  "status": "complete"
+}

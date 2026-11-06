@@ -106,6 +106,7 @@ run_session() (
             ELAPSED_CS=$(( $(uptime_cs) - START_CS ))
             ERROR_MESSAGE="Fallo en $stage con codigo $status"
             export ELAPSED_CS ERROR_MESSAGE
+            printf '%s\n' "$ERROR_MESSAGE" >> "$SESSION_DIR/execution.log"
             "$PYTHON" "$BASE_DIR/scripts/session_metadata.py" fail || true
         fi
         if [[ $status -ne 0 ]]; then echo "$PROFILE | Interrumpido en $stage con codigo $status" >&2; fi
@@ -133,7 +134,8 @@ run_session() (
         remaining=$(( EFFECTIVE_TIMEOUT * 100 - $(uptime_cs) + START_CS ))
         if (( remaining <= 0 )); then echo 'Presupuesto de tiempo agotado' >&2; return 124; fi
         printf -v seconds '%d.%02d' "$((remaining / 100))" "$((remaining % 100))"
-        timeout --signal=KILL "${seconds}s" "$@"
+        printf '\nEtapa %s\n' "$stage" >> "$SESSION_DIR/execution.log"
+        timeout --signal=KILL "${seconds}s" "$@" 2>&1 | tee -a "$SESSION_DIR/execution.log"
     }
 
     ARGS=(--profile "$PROFILE" --output "$SESSION_DIR" --runs "$RUNS"
@@ -149,7 +151,15 @@ run_session() (
     run_timed taskset -c "$CPU_CORE" "$BASE_DIR/bin/bench_memory" "${ARGS[@]}"
     stage=graficos
     display_progress 3 4 "$progress_start" "$PROFILE | Validando resultados y generando graficos"
-    run_timed env MPLCONFIGDIR="$scratch/mpl" "$PYTHON" "$BASE_DIR/plots/plot_experiments.py" --session "$SESSION_DIR" --staged
+    local -a plot_args=(--session "$SESSION_DIR" --staged)
+    if [[ "$PROFILE" == official ]]; then
+        if [[ "$DATA_ROOT" == "$BASE_DIR/data" ]]; then
+            plot_args+=(--publish-root "$BASE_DIR")
+        else
+            plot_args+=(--publish-root "$DATA_ROOT/results")
+        fi
+    fi
+    run_timed env MPLCONFIGDIR="$scratch/mpl" "$PYTHON" "$BASE_DIR/plots/plot_experiments.py" "${plot_args[@]}"
     ELAPSED_CS=$(( $(uptime_cs) - START_CS ))
     export ELAPSED_CS
     stage=cierre

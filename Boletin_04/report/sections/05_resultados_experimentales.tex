@@ -1,0 +1,114 @@
+\begingroup
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\captionsetup{font=small,skip=4pt}
+\captionsetup[subfigure]{font=small,justification=centering,skip=2pt}
+\section{Resultados experimentales}
+
+La sesión oficial \texttt{official-20261106-185540-Gmo0WTDo} completó las
+32 repeticiones de cada configuración y semilla: 88.704 muestras temporales
+y 72 registros de memoria. Se seleccionan cuatro gráficos de los 18 disponibles;
+los restantes y los CSV se conservan en las carpetas de cada experimento.
+Cada curva corresponde a una estructura y cada punto promedia, con igual
+peso, las medias de las tres semillas. Las barras indican la desviación
+estándar muestral entre esas tres medias, no un intervalo de confianza.
+El eje horizontal es logarítmico y el vertical es lineal.
+
+\subsection{Escenario estático: construcción y consultas}
+
+\begin{figure}[!ht]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_1_construccion/construction_none.png}
+        \caption{Experimento 1: construcción inicial.}
+        \label{fig:res-construccion}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_2_consultas_estaticas/static_queries_ranges_1000000.png}
+        \caption{Experimento 2: consultas con \(n=10^6\).}
+        \label{fig:res-consultas-estaticas}
+    \end{subfigure}
+    \caption{Escenario estático: costo de preparación y consultas sobre las
+    estructuras ya construidas.}
+    \label{fig:res-estatico}
+\end{figure}
+
+\textbf{Experimento 1.} Segment Tree presentó menor tiempo de construcción
+en todos los tamaños medidos. Para \(n=10^6\), su media fue 33,953 ms,
+frente a 359,880 ms de Sparse Table: una diferencia aproximada de
+10,6 veces. La tendencia es consistente con las cotas \(\Theta(n)\) y
+\(\Theta(n\log n)\), respectivamente, aunque estos datos no demuestran
+por sí solos una complejidad asintótica.
+
+\textbf{Experimento 2.} Sparse Table compensó parte de ese costo al consultar:
+para \(n=10^6\), sus medias estuvieron entre 14,765 y 30,814 ns, frente a
+32,395--910,696 ns de Segment Tree. En el rango de longitud 511, por ejemplo,
+se observaron 26,714 y 507,993 ns. Este resultado se refiere a consultas
+con la estructura preparada, no al costo total de una aplicación estática.
+El rango completo fue más rápido que el medio en ambas estructuras;
+siempre consulta el mismo intervalo \([0,n)\), por lo que no debe
+interpretarse la curva como un crecimiento monótono con la longitud.
+
+La preparación y el espacio limitan la ventaja de consultar más rápido:
+con un millón de elementos, Sparse Table retuvo 305,18 MiB, frente a
+30,52 MiB de Segment Tree. La tabla~\ref{tab:res-memoria} resume el espacio
+sin añadir otra figura al informe.
+
+\clearpage
+\subsection{Escenario dinámico: mantenimiento y costo por ciclo}
+
+\begin{figure}[!ht]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_3_mantenimiento/maintenance_none.png}
+        \caption{Experimento 3: reconstrucción frente a \texttt{update}.}
+        \label{fig:res-mantenimiento}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../plots/experimento_4_consultas_dinamicas/dynamic_queries_cycle.png}
+        \caption{Experimento 4: un cambio y 1.000 consultas.}
+        \label{fig:res-ciclo-dinamico}
+    \end{subfigure}
+    \caption{Escenario dinámico: mantenimiento aislado y costo combinado de
+    mantenimiento y consultas del mismo ciclo.}
+    \label{fig:res-dinamico}
+\end{figure}
+
+\textbf{Experimento 3.} Reconstruir Sparse Table fue más costoso que actualizar
+Segment Tree en todos los tamaños. Para \(n=10^6\), las medias fueron
+355,673 ms por reconstrucción y 0,831~\(\mu\)s por \texttt{update}.
+Las unidades distintas de la tabla~\ref{tab:res-mantenimiento} evitan
+redondear a cero las actualizaciones del árbol. Su curva casi coincide
+con el eje horizontal en la figura por la diferencia de escalas,
+no porque el mantenimiento sea gratuito.
+
+\textbf{Experimento 4.} Al incluir el cambio y las 1.000 consultas de cada
+ciclo, Sparse Table fue más rápida únicamente con 1.000 elementos:
+0,105 ms frente a 0,156 ms. Segment Tree obtuvo menor tiempo desde
+4.000 elementos entre los tamaños probados. Para \(n=10^6\), los costos
+fueron 355,736 y 0,387 ms, respectivamente, unas 919 veces a favor del árbol.
+El cambio de ganador se encuentra entre 1.000 y 4.000 elementos para
+esta carga; no se determinó su posición exacta ni se generaliza a otra
+proporción de modificaciones y consultas.
+
+El costo por ciclo suma los intervalos de mantenimiento y consultas del
+mismo método, tamaño, semilla, repetición y ciclo. La reconstrucción se
+cuenta una sola vez, no por longitud de rango. Se excluyen la construcción
+inicial, generación, validación, escritura y liberación: es una suma de
+componentes medidos, no un cronómetro continuo de extremo a extremo.
+Los diez ciclos se promedian dentro de cada repetición antes de obtener
+la media por semilla; no constituyen diez repeticiones independientes.
+
+En conjunto, las mediciones favorecen Sparse Table para consultar datos
+estáticos y Segment Tree para esta carga dinámica sobre arreglos grandes.
+La desviación entre semillas describe diferencias de entrada y condiciones
+de ejecución que el diseño no permite separar causalmente; no se presenta
+como prueba de significancia estadística.
+
+\clearpage
+\input{sections/06_tablas_resumen}
+\endgroup

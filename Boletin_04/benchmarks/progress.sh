@@ -10,11 +10,12 @@ uptime_cs() {
 
 display_progress() {
     local actual="$1" total="$2" start="$3" label="$4"
-    local width=30 filled seconds bar empty
+    local width=60 filled seconds bar empty
     filled=$(( width * actual / total ))
     seconds=$(( ($(uptime_cs) - start) / 100 ))
     printf -v bar '%*s' "$filled" ''
     printf -v empty '%*s' "$((width - filled))" ''
-    printf '[%s%s] %d%% %d/%d | %dm %ds | %s\n' "${bar// /=}" "$empty" \
-        "$((100 * actual / total))" "$actual" "$total" "$((seconds / 60))" "$((seconds % 60))" "$label"
+    printf '%s | %dm %ds\n' "$label" "$((seconds / 60))" "$((seconds % 60))"
+    printf '\r[%s%s] %d%%  %d/%d\n' "${bar// /=}" "$empty" \
+        "$((100 * actual / total))" "$actual" "$total"
 }
