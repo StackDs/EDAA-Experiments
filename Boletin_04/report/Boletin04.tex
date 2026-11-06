@@ -12,10 +12,13 @@
 \usepackage{hyperref}
 \usepackage{microtype}
 \usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{placeins}
 
 \hypersetup{colorlinks=true,linkcolor=blue!70!black,urlcolor=blue!70!black}
 \setlength{\headheight}{14pt}
 \setlength{\emergencystretch}{2em}
+\setlist[itemize]{topsep=4pt,itemsep=2pt,parsep=0pt,partopsep=0pt}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\textsl{Boletín 04: Range Queries}}
@@ -65,16 +68,14 @@
 \pagenumbering{arabic}
 
 \input{sections/01_introduccion}
-\clearpage
 \input{sections/02_fundamentos}
-\clearpage
 \input{sections/03_implementacion}
-\clearpage
 \input{sections/04_metodologia}
 \clearpage
 \input{sections/05_resultados_experimentales}
-\clearpage
+\FloatBarrier
 \input{sections/07_que_opcion_utilizar}
+\input{sections/08_generalizacion_operaciones}
 \clearpage
 \input{referencias}
 

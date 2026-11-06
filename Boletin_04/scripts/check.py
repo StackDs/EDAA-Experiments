@@ -122,7 +122,16 @@ def main():
         for actual in range(3):
             assert f"\r[{'=' * (30 * actual)}{' ' * (60 - 30 * actual)}] {50 * actual}%  {actual}/2" in text
         assert text.endswith("\n")
-    checks.advance("Barra Python en terminal y salida redirigida")
+    spec = importlib.util.spec_from_file_location("session_metadata", BASE / "scripts/session_metadata.py")
+    metadata_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(metadata_module)
+    revision = "a" * 40
+    with patch.object(metadata_module.subprocess, "check_output", side_effect=[revision + "\n", " M README.md\n"]):
+        assert metadata_module.git_metadata() == {"git_revision": revision, "git_status": " M README.md\n"}
+    for failure in [FileNotFoundError("git"), subprocess.CalledProcessError(128, ["git", "rev-parse", "HEAD"])]:
+        with patch.object(metadata_module.subprocess, "check_output", side_effect=failure):
+            assert metadata_module.git_metadata() == {"git_revision": None, "git_status": None}
+    checks.advance("Barra Python y metadatos Git opcionales")
     root = "/tmp/opencode" if Path("/tmp/opencode").is_dir() else None
     with tempfile.TemporaryDirectory(prefix="boletin04-check-", dir=root) as directory:
         temp = Path(directory)

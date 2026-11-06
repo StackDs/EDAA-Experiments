@@ -29,6 +29,17 @@ def numbers(text):
     return values
 
 
+def git_metadata():
+    try:
+        revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=BASE,
+                                           text=True, stderr=subprocess.DEVNULL).strip()
+        status = subprocess.check_output(["git", "status", "--short", "--", "."], cwd=BASE,
+                                         text=True, stderr=subprocess.DEVNULL)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return {"git_revision": None, "git_status": None}
+    return {"git_revision": revision, "git_status": status}
+
+
 def prepare():
     fields = {"sizes": "SIZES", "seeds": "SEEDS", "cycles": "CYCLES",
               "dynamic_queries": "DYNAMIC_QUERIES", "static_queries": "STATIC_QUERIES",
@@ -87,8 +98,7 @@ def prepare():
                     sources=sources, binaries=binaries, build=build, runtime=runtime,
                     platform=platform.platform(), machine=platform.machine(),
                     cpu_affinity=sorted(os.sched_getaffinity(0)), cpuinfo=cpuinfo)
-    metadata["git_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=BASE, text=True).strip()
-    metadata["git_status"] = subprocess.check_output(["git", "status", "--short", "--", "."], cwd=BASE, text=True)
+    metadata.update(git_metadata())
     Path(os.environ["CONTEXT_FILE"]).write_text(json.dumps({"metadata": metadata, "receipt": receipt}) + "\n")
     print(signature, timeout, ",".join(map(str, protocol["sizes"])), ",".join(map(str, protocol["seeds"])),
           protocol["cycles"], protocol["dynamic_queries"], protocol["static_queries"],

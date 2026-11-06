@@ -2,12 +2,14 @@
 
 **Informe:** [report/Boletin04.pdf](report/Boletin04.pdf)
 
-**Estado:** sesiones, CSV, gráficos y binarios anteriores eliminados para iniciar
-una ejecución limpia con `make all`. El análisis dinámico incluye el mantenimiento
-y las consultas del mismo ciclo.
+**Estado:** evaluación completada en la sesión
+`official-20261106-185540-Gmo0WTDo`: 88.704 muestras temporales y 72 registros
+de memoria, con 32 repeticiones por configuración y semilla. El análisis
+dinámico incluye el mantenimiento y las consultas del mismo ciclo.
 Los CSV y gráficos se publican por experimento en `data/experimento_*` y
 `plots/experimento_*`, como en el boletín 3.
-El informe compila, pero aún falta redactar e incorporar la sección de resultados.
+El informe incluye resultados, contraste de hipótesis, comparación de alternativas
+y generalización a otras operaciones binarias.
 
 ---
 
@@ -28,6 +30,7 @@ La respuesta es el **índice del mínimo** del rango; ante empates se elige el m
 Boletin_04/
 ├── Makefile                        # Compilación, ejecución, gráficos, informe y limpieza
 ├── README.md
+├── requirements.txt                # Dependencias de Python
 ├── benchmarks/                     # Orquestación Bash basada en el boletín 3
 │   ├── common.sh                   # Parámetros, afinidad, bloqueo, sesiones y presupuesto
 │   ├── progress.sh                 # Barras por etapa y tiempo transcurrido
@@ -72,14 +75,14 @@ Boletin_04/
 │   ├── build_config.py             # Registro de la configuración de compilación
 │   ├── session_metadata.py         # Metadatos y validación del piloto, sin ejecutar benchmarks
 │   └── check.py                    # Comprobaciones creadas y eliminadas en temporales
-├── src/
-│   ├── bench_rmq.cpp               # Motor compartido de los cuatro experimentos
-│   ├── bench_memory.cpp            # Pasada independiente de asignaciones
-│   └── memory_tracking.cpp         # Seguimiento de reservas dinámicas
-└── obsidian/                       # Notas locales, excluidas de Git
+└── src/
+    ├── bench_rmq.cpp               # Motor compartido de los cuatro experimentos
+    ├── bench_memory.cpp            # Pasada independiente de asignaciones
+    └── memory_tracking.cpp         # Seguimiento de reservas dinámicas
 ```
 
-Las sesiones se conservan por separado. El plan inicial de `docs/` es histórico y no dirige la ejecución.
+Las sesiones se conservan por separado. La entrega comprimida no incluye
+documentación interna ni planes históricos.
 
 Cada carpeta `data/experimento_*` contiene `samples.csv`, `summary.csv`,
 `plot_summary.csv`, `run_means.csv`, `session.json`, `publication.json` y `COMPLETE`. La calibración
@@ -146,6 +149,34 @@ y bytes, respectivamente. La conversión de unidades no cambia las mediciones.
 ## Comandos de Compilación y Ejecución
 
 Desde el directorio `Boletin_04/`:
+
+Requisitos: GCC con C++20, Make, Bash, Python 3 con `numpy`, `pandas` y
+`matplotlib`, util-linux (`taskset`, `flock`) y GNU coreutils (`timeout`).
+Para compilar el informe también se necesita Tectonic. En una extracción
+independiente, las dependencias de Python pueden prepararse así:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python3 -m pip install -r requirements.txt
+make check PYTHON="$PWD/.venv/bin/python3"
+make all PYTHON="$PWD/.venv/bin/python3"
+```
+
+El parámetro `PYTHON` selecciona el intérprete que tiene las dependencias.
+Crear `.venv` no basta: el Makefile busca primero el entorno compartido
+`../.venv` y, si no existe, usa `python3` del sistema. Por eso se indica
+explícitamente `PYTHON="$PWD/.venv/bin/python3"` para la entrega independiente.
+El mismo parámetro puede usarse con `make plot_session`.
+Si aparece `No package metadata was found for pandas`, las dependencias no
+están instaladas en el intérprete elegido; no es un error de compilación C++.
+Git es opcional: si no está instalado o la carpeta no pertenece a un repositorio
+con commits, sus campos de metadatos quedan en `null` y la ejecución continúa.
+La entrega incluye únicamente la versión vigente del código, sin historial Git
+ni copias de versiones anteriores.
+El entorno de la sesión oficial usó GCC 16.2.1, Python 3.14.9,
+NumPy 2.5.4, pandas 3.0.6 y Matplotlib 3.11.2; las versiones y huellas
+originales se conservan en `session.json`. Una nueva ejecución no reproduce
+necesariamente los mismos tiempos.
 
 | Comando | Acción |
 | :--- | :--- |

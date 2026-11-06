@@ -1,0 +1,82 @@
+\section{Generalización a otras operaciones binarias}
+
+Ambas estructuras admiten las operaciones propuestas, aunque no siempre
+conservan las consultas constantes de RMQ. Esta generalización es teórica:
+los experimentos midieron únicamente mínimos.
+
+\paragraph{Propiedades algebraicas.}
+Sea \(f:S\times S\to S\) una operación cerrada y
+\textbf{asociativa}, \(f(f(a,b),c)=f(a,f(b,c))\). Esta propiedad permite
+reagrupar bloques consecutivos: \((S,f)\) es un semigrupo.
+Con un \textbf{neutro} \(e\), \(f(e,x)=f(x,e)=x\), se obtiene un
+monoide, que facilita inicializar acumuladores y representar rangos vacíos
+\cite{atcoder-segtree}. Para rangos no vacíos basta iniciar con el primer bloque.
+
+La \textbf{idempotencia}, \(f(x,x)=x\), permite solapar bloques sin
+alterar el resultado. No se necesitan inversos ni conmutatividad si se
+preserva el orden. Sin asociatividad, la descomposición habitual puede dar
+respuestas incorrectas; reemplazar el mínimo por \(f\) no basta.
+
+\paragraph{Operaciones propuestas.}
+MCD y MCM denotan máximo común divisor y mínimo común múltiplo.
+Todas las operaciones son asociativas y conmutativas. Sparse Table combina bloques
+solapados solo para las idempotentes; en otro caso usa bloques disjuntos
+\cite{cp-sparse-table}.
+
+\begin{center}
+\begingroup
+\small
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+    \toprule
+    Operación & Idempotente & Neutro & Consulta Sparse Table \\
+    \midrule
+    Mínimo & Sí & \(+\infty\) & \(\Theta(1)\) \\
+    Máximo & Sí & \(0\) & \(\Theta(1)\) \\
+    Suma & No & \(0\) & \(O(\log n)\) \\
+    Producto & No & \(1\) & \(O(\log n)\) \\
+    XOR & No & \(0\) & \(O(\log n)\) \\
+    AND & Sí & \(2^w-1\) & \(\Theta(1)\) \\
+    OR & Sí & \(0\) & \(\Theta(1)\) \\
+    MCD & Sí & \(0\) & \(\Theta(1)\) \\
+    MCM & Sí & \(1\) & \(\Theta(1)\) \\
+    \bottomrule
+\end{tabular}
+\endgroup
+\end{center}
+
+Se suponen enteros no negativos de \(w\) bits para AND y OR,
+\(\gcd(0,0)=0\) y \(\operatorname{mcm}(0,x)=0\). MCM es idempotente:
+\(\operatorname{mcm}(x,x)=x\). Para mínimo, el neutro puede ser el máximo
+representable en un dominio acotado, o añadirse \(+\infty\).
+
+\paragraph{Garantías de Sparse Table.}
+Construcción, espacio y reconstrucción por cambio conservan
+\(\Theta(n\log n)\). Las consultas idempotentes siguen siendo
+\(\Theta(1)\). Para suma, producto y XOR, \texttt{query} combina bloques
+disjuntos en orden: procesa \(\operatorname{popcount}(k)\) bloques,
+con cota \(O(\log(k+1))\subseteq O(\log n)\).
+No debe usarse \texttt{query\_idempotent}: sumar los bloques
+\([2,3]\) y \([3,5]\) devuelve 13 en vez de 10, por repetir el 3.
+
+\paragraph{Garantías y adaptación de Segment Tree.}
+La asociatividad permite conservar construcción y espacio \(\Theta(n)\),
+consultas \(O(\log n)\) y actualizaciones \(\Theta(\log n)\)
+\cite{cp-segment-tree,atcoder-segtree}. En el código actual, sustituir
+\texttt{\_min} requiere corregir \texttt{query}: inicializa con una hoja
+que vuelve a incluir, repetición inocua para mínimo pero incorrecta para
+suma, producto y XOR. Se debe iniciar con el neutro o el primer bloque
+procesado. Para operaciones no conmutativas hacen falta acumuladores
+izquierdo y derecho ordenados; las actualizaciones deben combinar hijo
+izquierdo y luego derecho, no según cuál fue modificado. Son adaptaciones
+propuestas, no cambios a los algoritmos medidos.
+
+\paragraph{Límites del modelo.}
+Las cotas suponen agregados y combinaciones de costo constante. Suma,
+producto y MCM pueden desbordarse; la aritmética modular no da el resultado
+exacto. Dividir antes de multiplicar en MCM no garantiza representabilidad
+\cite{cpp-lcm}. Con precisión arbitraria deben contabilizarse el tamaño,
+la copia y la combinación de resultados. Al analizar bits, MCD y MCM
+también incorporan el costo aritmético \cite{cp-euclid}; las garantías
+de RMQ no se trasladan incondicionalmente a enteros ilimitados.

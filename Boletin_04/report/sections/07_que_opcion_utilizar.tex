@@ -44,7 +44,7 @@ actualizaciones puntuales \(\Theta(\log n)\) sin nuevas reservas.
 Su desventaja es un mayor costo de consulta, con peor caso
 \(\Theta(\log n)\), que puede acumularse en cargas intensivas de lectura.
 
-\textbf{Recomendación.} Conviene Sparse Table para datos inmutables y
+\textbf{En resumen.} Conviene Sparse Table para datos inmutables y
 memoria suficiente, cuando el ahorro en muchas consultas amortice su preparación.
 Conviene Segment Tree si hay cambios frecuentes, memoria limitada o pocas
 consultas que no compensen construir la tabla. La decisión debe considerar

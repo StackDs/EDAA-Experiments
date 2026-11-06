@@ -3,7 +3,7 @@
 Las dos implementaciones son clases genéricas de C++20 obtenidas del
 repositorio del curso y conservadas en \texttt{include/range\_queries/}.
 Reciben un vector de elementos de tipo \texttt{T} y consultan intervalos
-semiabiertos \([i,j)\). Para obtener el índice del mínimo se utilizarán pares
+semiabiertos \([i,j)\). Para obtener el índice del mínimo se utilizaron pares
 \((\text{valor},\text{índice})\), cuyo orden lexicográfico resuelve empates
 por el menor índice. Se reemplazaron los comentarios y se añadió la cabecera
 \texttt{<bit>} a Sparse Table, sin modificar la lógica de los algoritmos.
@@ -18,12 +18,12 @@ construyen las filas siguientes: \texttt{p} representa la longitud de un
 bloque y \texttt{q} el doble; cada posición válida combina dos bloques
 consecutivos de la fila anterior.
 
-Para RMQ se empleará \texttt{query\_idempotent}, que calcula el nivel
+Para RMQ se empleó \texttt{query\_idempotent}, que calcula el nivel
 \texttt{b} a partir de la longitud del intervalo y combina los bloques
 de esa fila que comienzan en \(i\) y \(j-2^b\). La clase también
 incluye \texttt{query}, que recorre bloques disjuntos, pero no es la variante
 seleccionada para esta comparación. Como no dispone de \texttt{update},
-en el escenario dinámico se reconstruirá desde el arreglo modificado.
+en el escenario dinámico se reconstruyó desde el arreglo modificado.
 La implementación proviene del repositorio del curso \cite{edaa-sparse-table}.
 
 \subsection{Segment Tree}
