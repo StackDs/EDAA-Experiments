@@ -1,6 +1,154 @@
 \section{Metodología experimental}
-\subsection{Entorno de ejecución}
+
+\subsection{Características de la máquina}
+
+Los experimentos se realizarán en una estación de trabajo con las siguientes
+características:
+\begin{itemize}
+    \item \textbf{Procesador:} Intel Core i5-13420H (Raptor Lake), 8 núcleos y
+    12 hilos (4 P-Cores y 4 E-Cores), frecuencia base de 2.10 GHz y turbo de
+    hasta 4.60 GHz. Cachés: L1d de 320 KiB, L1i de 384 KiB, L2 de 7 MiB y L3
+    compartida de 12 MiB.
+    \item \textbf{Memoria principal:} 16 GiB DDR (15 GiB utilizables por el
+    sistema operativo).
+    \item \textbf{Almacenamiento:} SSD NVMe WD PC SN740 de 512 GB, interfaz
+    PCIe Gen4 $\times$4.
+    \item \textbf{Entorno de compilación:} Arch Linux x86\_64 (kernel 6.x),
+    GCC y las banderas \texttt{-std=c++20 -O3 -march=native}.
+    \item \textbf{Afinidad de CPU:} se fijará el proceso de medición al núcleo
+    lógico 2 mediante \texttt{taskset -c 2}. Esto reduce las migraciones entre
+    núcleos, pero no elimina variaciones de frecuencia, temperatura ni la
+    actividad concurrente del sistema.
+\end{itemize}
+
 \subsection{Datos de entrada}
-\subsection{Medición de tiempos}
-\subsection{Medición de memoria}
-\subsection{Repeticiones y tratamiento estadístico}
+
+Los textos procederán del archivo \texttt{english.50MB} de Pizza \& Chili,
+formado por textos en inglés de Project Gutenberg \cite{pizzachili}. Se usarán
+sus primeros 50 millones de bytes y prefijos de 1, 5, 10 y 20 millones de bytes;
+en este estudio, \(1\,\mathrm{MB}=10^6\) bytes. Las longitudes \(n\) y \(m\)
+se medirán en bytes, conservando mayúsculas, espacios y puntuación.
+
+Los patrones serán subcadenas del corpus, no necesariamente palabras completas.
+Antes de medir se verificarán sus frecuencias, incluidas las coincidencias
+superpuestas, y se conservarán sus bytes, longitudes y posiciones de extracción.
+Los ejemplos literales se incorporarán tras seleccionar los patrones reales,
+sin atribuir al corpus fragmentos no comprobados. También se verificará la
+compatibilidad de sus bytes con las implementaciones, en particular el
+centinela y la indexación de caracteres del Suffix Array.
+
+Como excepción obligatoria se generará \(T=A^n\). Por ejemplo,
+\texttt{AAAAAAAAAA} contiene diez ocurrencias de \(P=\texttt{A}\) y ninguna de
+\(P=\texttt{B}\).
+
+\subsection{Experimentos e hipótesis}
+
+Se compararán los cuatro métodos sobre las mismas entradas. La búsqueda de KMP
+y Rabin--Karp incluirá la preparación que sus funciones realizan en cada llamada;
+la consulta del Suffix Array usará el índice ya construido. Su construcción se
+medirá por separado, de modo que una consulta rápida no oculte ese costo inicial.
+La lectura del archivo, la selección de patrones y la validación de conteos
+quedarán fuera del tiempo medido.
+
+El esquema de medición se basará en la plantilla \texttt{uhr}, de Leonardo
+Lovera (LELE), \cite{lovera-uhr}. 
+
+Cada configuración tendrá \textbf{64 repeticiones}, después del calentamiento.
+Se usarán los mismos lotes de patrones para todos los métodos; los conteos se
+consumirán para evitar su eliminación por el compilador y se validarán fuera
+del intervalo medido. Se aplicará afinidad al núcleo lógico 2 y una pausa de
+dos segundos entre series. Se conservarán las muestras crudas y se generarán
+CSV con \textbf{media, desviación estándar muestral, mínimo, Q1, mediana, Q3 y
+máximo}, calculados sobre los tiempos normalizados de las repeticiones. Las
+figuras mostrarán media y barras de una desviación estándar, no intervalos de
+confianza; el extremo inferior se limitará a cero. En el experimento de
+ocurrencias se conservará el resumen por patrón para no mezclar conteos
+distintos. Las repeticiones temporales no se tratarán como patrones independientes.
+En Rabin--Karp se mantendrá \(q=101\) en todos los experimentos.
+
+Se reportarán también la memoria auxiliar de KMP y la memoria persistente y
+temporal de construcción del Suffix Array, contabilizando las capacidades de
+sus cadenas y vectores, sin incluir la entrada compartida ni los datos del
+medidor. Fuerza bruta y Rabin--Karp no reservan memoria dinámica auxiliar.
+Esta medida no se presentará como memoria residente total del proceso.
+
+\subsubsection{Efecto del largo del texto}
+
+\begin{itemize}
+    \item \textbf{Variable:} \(n\), con textos de 1, 5, 10, 20 y 50 MB.
+    \item \textbf{Controles:} diez patrones distintos de \(m=32\) bytes,
+    extraídos del primer MB y verificados como únicos en los 50 MB. Se usará
+    exactamente el mismo conjunto en todos los tamaños, manteniendo \(z=1\).
+    La selección se realizará antes de medir, sin insertar coincidencias.
+    \item \textbf{Resultados:} tiempo por consulta frente a \(n\), construcción
+    del Suffix Array frente a \(n\) y consumo de memoria. Se mostrarán gráficos
+    y tablas; los conteos deberán coincidir entre métodos.
+\end{itemize}
+
+\textbf{Hipótesis.} Con \(|P|\) y el número de ocurrencias fijos, se espera que
+fuerza bruta y KMP aumenten aproximadamente de forma lineal con el largo del
+texto. Rabin--Karp también debería crecer cerca de lineal si las colisiones son
+escasas. La consulta del Suffix Array debería crecer más lentamente, de forma
+aproximadamente logarítmica, aunque la construcción del índice crecerá como
+\(n\log n\). El índice y su memoria temporal crecerán linealmente con \(n\);
+la memoria auxiliar de los otros métodos permanecerá aproximadamente constante
+porque \(m\) no cambia.
+
+\subsubsection{Efecto del largo del patrón}
+
+\begin{itemize}
+    \item \textbf{Variable:} \(m\), con longitudes de 8, 16, 32, 64, 128 y
+    256 bytes.
+    \item \textbf{Controles:} un texto fijo de 50 MB y diez patrones distintos
+    por longitud, cada uno con exactamente una ocurrencia verificada. Así se
+    evita confundir patrones más largos con una disminución del conteo.
+    El Suffix Array será el mismo para todas las longitudes.
+    \item \textbf{Resultados:} tiempo por consulta y memoria frente a \(m\).
+    Se informará el costo de construcción del índice como costo fijo, sin
+    incluirlo nuevamente en cada consulta.
+\end{itemize}
+
+\textbf{Hipótesis.} KMP conservará un costo dominado por recorrer el texto,
+con preparación y memoria lineales en \(m\). Rabin--Karp sumará una preparación
+lineal en \(m\), pero no necesariamente una búsqueda más lenta si hay pocas
+verificaciones. En fuerza bruta, el crecimiento de la cota de peor caso no
+implica un crecimiento lineal observado: muchas comparaciones pueden fallar
+pronto. El Suffix Array puede examinar prefijos más largos al aumentar \(m\),
+con cota \(O(m\log n)\), sin que aumente la memoria del índice.
+
+\subsubsection{Efecto del número de ocurrencias}
+
+\begin{itemize}
+    \item \textbf{Variable:} \(z\), el número de ocurrencias, incluidas las
+    superpuestas. Se fijarán \(n=50\) MB y \(m=4\) bytes en el corpus inglés.
+    \item \textbf{Selección:} se contarán las subcadenas distintas de cuatro
+    bytes y se elegirán treinta patrones presentes distribuidos entre
+    frecuencias bajas, intermedias y altas. Se dividirá el rango de frecuencias
+    observadas en tres grupos sobre escala logarítmica y se tomarán diez patrones
+    por grupo. Se añadirán diez patrones ausentes de igual longitud, cuya ausencia
+    se comprobará. Las frecuencias reales, no valores impuestos, serán el eje
+    horizontal; si algún grupo no aporta diez patrones, se reportarán todos los
+    disponibles y su cantidad.
+    \item \textbf{Caso extremo:} se usará además \(T=A^n\), con los cinco
+    tamaños del primer experimento, buscando \(P=A\) y \(P=B\). Ambos patrones
+    tienen \(m=1\); se compararán \(z=n\) y \(z=0\) por separado del corpus inglés.
+    \item \textbf{Resultados:} tiempo por consulta frente a \(z\), con \(n\)
+    y \(m\) fijos en cada comparación. Los casos unarios se mostrarán en otra
+    figura, contrastando ambos patrones para cada tamaño.
+\end{itemize}
+
+\textbf{Hipótesis.} Rabin--Karp tenderá a aumentar su tiempo con \(z\), pues
+cada coincidencia real exige verificar los \(m\) caracteres. KMP seguirá siendo
+lineal en \(n\), aunque pueden variar sus constantes. La consulta del Suffix
+Array no enumera coincidencias, por lo que no se espera un costo proporcional
+a \(z\). En fuerza bruta, más coincidencias implican más comparaciones completas,
+pero los intentos fallidos también influyen. En el caso unario con \(m=1\),
+fuerza bruta, KMP y Rabin--Karp seguirán siendo lineales en \(n\): muchas
+coincidencias no bastan por sí solas para producir un costo cuadrático.
+
+\textit{Consideración:} en texto natural, patrones con frecuencias distintas
+también difieren en sus caracteres y prefijos. Este experimento estudia la
+relación observada entre frecuencia y tiempo, no un efecto causal aislado de
+\(z\). Se usarán varios patrones por grupo para no depender de una única
+subcadena. La memoria auxiliar no debería variar con \(z\), pues solo se
+devuelve un contador.

@@ -1,4 +1,49 @@
 \section{Implementación}
-\subsection{Organización modular y contratos}
-\subsection{Código de referencia y adaptaciones}
-\subsection{Validación de corrección}
+
+Los algoritmos directos reciben primero el patrón y luego el texto, y devuelven
+un contador de ocurrencias; Suffix Array se construye con el texto y se consulta
+con el patrón. Fuerza bruta se incorporó como línea base; KMP,
+Rabin--Karp y Suffix Array se obtuvieron del repositorio del curso. Las cuatro implementaciones cuentan coincidencias
+superpuestas.
+
+\subsection{Búsqueda por fuerza bruta}
+
+Esta implementación se agregó para el estudio. La función \texttt{brute\_force}
+recibe vistas \texttt{string\_view} del patrón y del texto. Un ciclo \texttt{for}
+prueba cada posición inicial válida, y un ciclo \texttt{while} compara los
+caracteres correspondientes. Si el patrón coincide completo, incrementa
+\texttt{matches}; al avanzar una posición en cada iteración, cuenta también
+coincidencias superpuestas.
+
+\subsection{Knuth--Morris--Pratt (KMP)}
+
+La función \texttt{kmp} construye el vector \texttt{p} de largo \(m+1\), que
+guarda la información de prefijos y fallos del patrón. Un ciclo lo prepara;
+después, el ciclo de búsqueda usa \texttt{i} como índice del texto y \texttt{j}
+como índice del patrón. Ante una discrepancia, actualiza \texttt{j} con
+\texttt{p[j]} sin retroceder \texttt{i}; al completar una coincidencia,
+incrementa \texttt{matches} y reutiliza \texttt{p} para permitir solapamientos.
+La implementación proviene del repositorio del curso \cite{edaa-kmp}.
+
+\subsection{Rabin--Karp}
+
+La función \texttt{rk} usa \texttt{p} y \texttt{t} para los hashes del patrón y
+de la ventana actual, \texttt{q} como módulo y \texttt{d = 256} como base. Un
+ciclo inicial calcula ambos hashes; el ciclo principal recorre las ventanas.
+Cuando los hashes coinciden, un ciclo \texttt{while} verifica los caracteres y
+actualiza \texttt{count} si hay coincidencia. Después actualiza \texttt{t} en
+tiempo constante para la siguiente ventana. La implementación proviene del
+repositorio del curso \cite{edaa-rabin-karp}.
+
+\subsection{Suffix Array}
+
+El constructor añade el centinela ETX al texto y crea el vector \texttt{SA} con
+las posiciones iniciales de los sufijos, además de los vectores \texttt{p},
+\texttt{q} y \texttt{r} para posiciones temporales y clases. En cada ronda,
+un ciclo duplica el prefijo considerado;
+\texttt{count} acumula frecuencias para ordenar las clases. El método
+\texttt{count} busca con dos ciclos \texttt{while} los límites del intervalo de
+sufijos que comienza con el patrón, comparando con \texttt{substr} y
+\texttt{starts\_with}; resta los límites para obtener el número de
+ocurrencias. La implementación proviene del repositorio del curso
+\cite{edaa-suffix-array}.
