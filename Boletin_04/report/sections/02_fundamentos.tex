@@ -1,0 +1,153 @@
+\section{Análisis teórico}
+
+Sea \(A\) un arreglo no vacío de \(n\) enteros. Una consulta RMQ sobre
+\(A[L..R]\), con \(0\leq L\leq R<n\), devuelve el índice de su elemento
+mínimo. Denotamos por \(k=R-L+1\) la longitud del rango y resolvemos los
+empates con el \textbf{menor índice}. Para ello, cada candidato se representa
+mediante el par \((A[i],i)\): el mínimo lexicográfico compara primero el valor
+y luego el índice. Las implementaciones reciben intervalos semiabiertos
+\([L,R+1)\); convertir los extremos y extraer el índice de la respuesta cuesta
+\(\Theta(1)\).
+
+Usamos \(O(\cdot)\) para cotas superiores y
+\(\Theta(\cdot)\) para cotas ajustadas. Suponemos un modelo de palabras de
+máquina: valores, índices y pares ocupan espacio constante, y acceder, copiar
+y comparar un par cuesta \(\Theta(1)\). El espacio de la estructura incluye
+sus copias internas, pero excluye el arreglo externo de entrada; devolver un
+índice ocupa \(\Theta(1)\). Las expresiones con \(\log n\), en base dos,
+se presentan para \(n\geq2\); con un solo elemento las operaciones RMQ son
+constantes. El análisis se deriva del código del curso y de las descripciones
+de ambas estructuras \cite{edaa-sparse-table,edaa-segment-tree,cp-sparse-table,cp-segment-tree}.
+
+\subsection{Sparse Table}
+
+Sparse Table almacena respuestas para bloques de longitud potencia de dos.
+Si \(S_j[i]\) es el mínimo lexicográfico del bloque que comienza en \(i\)
+y tiene \(2^j\) elementos, su construcción utiliza
+\[
+    S_0[i]=(A[i],i),\qquad
+    S_j[i]=\min_{\mathrm{lex}}\bigl(S_{j-1}[i],
+                              S_{j-1}[i+2^{j-1}]\bigr).
+\]
+La implementación reserva \(\ell=\lfloor\log_2 n\rfloor+1\) filas
+completas de \(n\) elementos, aunque algunas posiciones no correspondan a
+bloques válidos \cite{edaa-sparse-table}. Para una consulta, toma
+\(b=\lfloor\log_2 k\rfloor\) y combina
+\[
+    \min_{\mathrm{lex}}\bigl(S_b[L],S_b[R-2^b+1]\bigr).
+\]
+Los dos bloques cubren el rango y pueden solaparse. La duplicación de su
+intersección no cambia el mínimo, por la idempotencia de esta operación
+\cite{cp-sparse-table}.
+
+\begin{itemize}
+    \setlength{\itemsep}{2pt}
+    \setlength{\parskip}{0pt}
+    \item \textbf{Preparación (construcción):} \(\Theta(n\log n)\), tanto
+    en mejor como en peor caso. Inicializar las filas ya requiere
+    \(\Theta(n\ell)\) trabajo. Además, si
+    \(m=\lfloor\log_2 n\rfloor\), se realizan
+    \(\sum_{j=1}^{m}(n-2^j+1)=m(n+1)-2^{m+1}+2\)
+    combinaciones; cada una cuesta tiempo constante.
+    \item \textbf{Mejor caso de consulta RMQ:} \(\Theta(1)\).
+    \item \textbf{Peor caso de consulta RMQ:} \(\Theta(1)\). El método
+    \texttt{query\_idempotent} realiza dos accesos y una combinación.
+    Calcula el nivel con \texttt{std::bit\_width}, que permite obtener
+    \(\lfloor\log_2 k\rfloor\) sobre una palabra de ancho fijo sin recorrer
+    el rango \cite{cp-sparse-table,cpp-bit-width}.
+    \item \textbf{Consulta general:} el método distinto \texttt{query}
+    descompone \(k\) en potencias de dos y combina bloques disjuntos.
+    Procesa tantos bloques como bits uno tiene \(k\): su costo es
+    \(\Theta(\operatorname{popcount}(k))\), con mejor caso \(\Theta(1)\)
+    y cota \(O(\log(k+1))\). No es la variante utilizada para medir RMQ.
+    \item \textbf{Mantenimiento tras un cambio:} la implementación no ofrece
+    \texttt{update}. En el escenario dinámico se reconstruye la tabla,
+    con costo \(\Theta(n\log n)\) por modificación, independientemente
+    de su posición. Es una estrategia de mantenimiento del estudio, no una
+    operación de actualización nativa ni una imposibilidad de diseñar
+    otras variantes.
+    \item \textbf{Memoria:} \(\Theta(n\log n)\) persistente y
+    \(\Theta(1)\) auxiliar por consulta. Para
+    \(s=\operatorname{sizeof}(T)\), las filas contienen \(n\ell\) objetos
+    de tipo \(T\), cuyo tamaño lógico de datos es \(n\ell s\) bytes,
+    además de los metadatos de los vectores y del combinador. La expresión
+    que crea las filas utiliza también un vector temporal de \(n\)
+    elementos: \(\Theta(n)\) espacio temporal, sin cambiar el orden
+    \(\Theta(n\log n)\) del pico total de construcción.
+\end{itemize}
+
+El tamaño lógico no debe confundirse con los bytes efectivamente reservados:
+estos dependen de las capacidades de los vectores y de la biblioteca usada.
+Si durante una reconstrucción coexisten la tabla anterior y la nueva, el pico
+puede aumentar, pero conserva el mismo orden asintótico.
+
+\subsection{Segment Tree}
+
+Segment Tree mantiene mínimos de grupos de elementos en una jerarquía binaria
+\cite{cp-segment-tree}. La versión del curso es iterativa: reserva un vector
+de \(2n\) posiciones, coloca las hojas en \([n,2n)\) y calcula los nodos
+internos combinando sus dos hijos. No redondea \(n\) a una potencia de dos
+\cite{edaa-segment-tree}.
+
+\begin{itemize}
+    \setlength{\itemsep}{2pt}
+    \setlength{\parskip}{0pt}
+    \item \textbf{Preparación (construcción):} \(\Theta(n)\), tanto en mejor
+    como en peor caso. Inicializa \(2n\) posiciones, copia \(n\) hojas y
+    calcula exactamente \(n-1\) mínimos de hijos. No realiza \(n\)
+    actualizaciones independientes, lo que costaría \(O(n\log n)\).
+    \item \textbf{Mejor caso de consulta:} \(\Theta(1)\), por ejemplo al
+    consultar un único elemento. En ese caso el intervalo se consume en
+    una iteración del recorrido ascendente.
+    \item \textbf{Peor caso de consulta:} \(\Theta(\log n)\). Los dos
+    extremos ascienden dividiéndose por dos y se incorporan como máximo
+    dos nodos por nivel. Existen rangos que requieren recorrer
+    \(\Theta(\log n)\) niveles. Más precisamente, para longitud \(k\)
+    el bucle queda acotado por \(O(\log(k+1))\), porque la cantidad de
+    posiciones pendientes se reduce al menos a la mitad en cada paso.
+    Por ello, mantener \(k\) fijo no obliga a observar crecimiento
+    logarítmico con \(n\), aunque sí puedan variar los accesos a caché.
+    \item \textbf{Actualización puntual:} \(\Theta(\log n)\) en mejor y
+    peor caso para \(n\geq2\). Después de escribir una hoja, el método
+    \texttt{update} recalcula todos sus ancestros hasta la raíz. No termina
+    anticipadamente si el nuevo valor coincide con el anterior o si un
+    mínimo intermedio no cambia.
+    \item \textbf{Memoria:} \(\Theta(n)\) persistente y \(\Theta(1)\)
+    auxiliar por consulta y actualización. Los \(2n\) objetos del vector
+    representan \(2ns\) bytes lógicos de datos, más los metadatos y
+    cualquier capacidad adicional. La construcción usa \(\Theta(1)\)
+    espacio temporal fuera de ese almacenamiento, y el pico total es
+    \(\Theta(n)\). Las actualizaciones no crean nuevos nodos.
+\end{itemize}
+
+Estas cotas se refieren al código iterativo incorporado, no a otra
+implementación recursiva que reserve \(4n\) posiciones. En ambas estructuras,
+el contenido de los valores no modifica las reservas principales ni la cantidad
+de pasos de construcción; el costo de consulta del árbol depende del rango,
+no de encontrar antes un valor especialmente pequeño.
+
+\subsection{Comparación de complejidades}
+
+La tabla resume RMQ con pares de tamaño fijo. La consulta excluye la
+construcción y el mantenimiento; en Sparse Table corresponde a
+\texttt{query\_idempotent}. La columna de mantenimiento compara reconstruir
+Sparse Table con actualizar Segment Tree, no dos constructores.
+
+\begingroup
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Estructura} & \textbf{Construcción} &
+\shortstack{\textbf{Mejor}\\\textbf{consulta}} &
+\shortstack{\textbf{Peor}\\\textbf{consulta}} &
+\textbf{Mantenimiento} & \shortstack{\textbf{Memoria}\\\textbf{persistente}} \\
+\midrule
+Sparse Table & \(\Theta(n\log n)\) & \(\Theta(1)\) & \(\Theta(1)\) &
+\(\Theta(n\log n)\) & \(\Theta(n\log n)\) \\
+Segment Tree & \(\Theta(n)\) & \(\Theta(1)\) & \(\Theta(\log n)\) &
+\(\Theta(\log n)\) & \(\Theta(n)\) \\
+\bottomrule
+\end{tabular}
+\par
+\endgroup

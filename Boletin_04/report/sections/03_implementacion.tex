@@ -1,0 +1,43 @@
+\section{Implementación}
+
+Las dos implementaciones son clases genéricas de C++20 obtenidas del
+repositorio del curso y conservadas en \texttt{include/range\_queries/}.
+Reciben un vector de elementos de tipo \texttt{T} y consultan intervalos
+semiabiertos \([i,j)\). Para obtener el índice del mínimo se utilizarán pares
+\((\text{valor},\text{índice})\), cuyo orden lexicográfico resuelve empates
+por el menor índice. Se reemplazaron los comentarios y se añadió la cabecera
+\texttt{<bit>} a Sparse Table, sin modificar la lógica de los algoritmos.
+
+\subsection{Sparse Table}
+
+La clase \texttt{sparse\_table} guarda una matriz de vectores \texttt{ST}
+y una función de combinación \texttt{f}. El constructor obtiene
+\(m=\lfloor\log_2 n\rfloor\) mediante \texttt{\_lg}, reserva \(m+1\)
+filas de \(n\) elementos y copia la entrada en \texttt{ST[0]}. Dos ciclos
+construyen las filas siguientes: \texttt{p} representa la longitud de un
+bloque y \texttt{q} el doble; cada posición válida combina dos bloques
+consecutivos de la fila anterior.
+
+Para RMQ se empleará \texttt{query\_idempotent}, que calcula el nivel
+\texttt{b} a partir de la longitud del intervalo y combina los bloques
+de esa fila que comienzan en \(i\) y \(j-2^b\). La clase también
+incluye \texttt{query}, que recorre bloques disjuntos, pero no es la variante
+seleccionada para esta comparación. Como no dispone de \texttt{update},
+en el escenario dinámico se reconstruirá desde el arreglo modificado.
+La implementación proviene del repositorio del curso \cite{edaa-sparse-table}.
+
+\subsection{Segment Tree}
+
+La clase \texttt{segment\_tree} almacena la estructura en un vector
+\texttt{ST} de \(2n\) elementos. El constructor copia la entrada en las
+hojas, desde \texttt{ST[n]} hasta \texttt{ST[2n - 1]}, y recorre los
+índices internos en orden descendente para guardar el mínimo de cada par
+de hijos mediante \texttt{\_min}.
+
+El método \texttt{query} desplaza los extremos del intervalo a las hojas e
+inicializa \texttt{q} con un elemento del rango. Un ciclo asciende por el
+árbol, incorpora los nodos de los bordes según la paridad de los extremos
+y conserva el menor candidato. El método \texttt{update} cambia una hoja
+y recalcula el mínimo de sus ancestros, combinando cada nodo con su hermano
+hasta alcanzar la raíz, sin reconstruir el vector.
+La implementación proviene del repositorio del curso \cite{edaa-segment-tree}.

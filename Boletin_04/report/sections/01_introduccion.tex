@@ -1,0 +1,56 @@
+\section{Resumen}
+
+\subsection{Propósito y alcance del estudio}
+
+Este estudio compara dos estructuras de datos para resolver el problema de
+\textit{Range Minimum Query} (RMQ): \textbf{Sparse Table} y
+\textbf{Segment Tree}. Dado un arreglo de enteros \(A\), una consulta sobre
+el rango inclusivo \(A[L..R]\) busca obtener el \textbf{índice del elemento
+mínimo}, no solamente su valor. Se consideran un \textbf{escenario estático},
+en el que el arreglo permanece fijo, y un \textbf{escenario dinámico},
+en el que sus elementos reciben modificaciones puntuales.
+
+El diseño experimental contempla cuatro comparaciones:
+\begin{itemize}
+    \item \textbf{Construcción en el escenario estático:} medir el tiempo
+    necesario para construir ambas estructuras a partir del mismo arreglo,
+    considerando diferentes cantidades de elementos.
+    \item \textbf{Consultas en el escenario estático:} medir el tiempo de
+    respuesta sobre las estructuras ya construidas, utilizando rangos
+    aleatorios de distintas longitudes y arreglos de diferentes tamaños.
+    \item \textbf{Mantenimiento en el escenario dinámico:} comparar el
+    tiempo de una actualización puntual en Segment Tree con el tiempo de
+    reconstruir Sparse Table después del mismo cambio. Esta comparación
+    representa el costo de mantener respuestas vigentes, no dos operaciones
+    de actualización equivalentes.
+    \item \textbf{Consultas en el escenario dinámico:} medir el tiempo de
+    respuesta después de aplicar los cambios y mantener ambas estructuras
+    actualizadas, separándolo del costo de mantenimiento.
+\end{itemize}
+
+En cada comparación se utilizarán las mismas entradas y consultas para ambas
+estructuras. Además, se realizará un \textbf{análisis del espacio utilizado},
+considerando las asignaciones de memoria de los constructores y las reservas
+temporales relevantes durante la construcción o reconstrucción. Los resultados
+se interpretarán junto con las complejidades teóricas para discutir las
+ventajas y limitaciones de cada alternativa. El estudio también abordará su
+adaptación a otras operaciones binarias y las propiedades algebraicas que
+permiten conservar sus garantías.
+
+\subsection{Estructuras y algoritmos estudiados}
+
+\begin{itemize}
+    \item \textbf{Sparse Table:} preprocesa el arreglo almacenando resultados
+    para bloques de longitud potencia de dos. Para RMQ permite responder
+    consultas en tiempo constante mediante la combinación de dos bloques
+    que pueden solaparse. La implementación estudiada no ofrece
+    actualizaciones, por lo que en el escenario dinámico se reconstruirá
+    después de cada modificación.
+    \item \textbf{Segment Tree:} organiza los mínimos de intervalos en una
+    estructura jerárquica. Responde consultas y permite actualizar un
+    elemento en tiempo logarítmico, recalculando los nodos afectados sin
+    reconstruir toda la estructura.
+\end{itemize}
+
+Las implementaciones incorporadas proceden del repositorio oficial del curso,
+con autoría original de LELE \cite{edaa-sparse-table,edaa-segment-tree}.

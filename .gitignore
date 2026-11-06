@@ -68,5 +68,6 @@ venv/
 # los datos crudos consolidados deben ser versionados para que los gráficos
 # del informe puedan reproducirse inmediatamente tras clonar el repositorio.
 
-# Bóveda Obsidian local de Boletín 03
+# Bóvedas Obsidian locales
 /Boletin_03/obsidian/
+/Boletin_04/obsidian/

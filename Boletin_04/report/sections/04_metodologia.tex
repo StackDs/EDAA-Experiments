@@ -1,0 +1,262 @@
+\section{Metodología experimental}
+
+\subsection{Características de la máquina}
+
+Los experimentos se realizarán en una estación de trabajo con las siguientes
+características:
+\begin{itemize}
+    \item \textbf{Procesador:} Intel Core i5-13420H (Raptor Lake), 8 núcleos y
+    12 hilos (4 P-Cores y 4 E-Cores), frecuencia base de 2.10 GHz y turbo de
+    hasta 4.60 GHz. Cachés: L1d de 320 KiB, L1i de 384 KiB, L2 de 7 MiB y L3
+    compartida de 12 MiB.
+    \item \textbf{Memoria principal:} 16 GiB DDR (15 GiB utilizables por el
+    sistema operativo).
+    \item \textbf{Almacenamiento:} SSD NVMe WD PC SN740 de 512 GB, interfaz
+    PCIe Gen4 $\times$4.
+    \item \textbf{Entorno de compilación:} Arch Linux x86\_64 (kernel 6.x),
+    GCC y las banderas \texttt{-std=c++20 -O3 -march=native}.
+    \item \textbf{Afinidad de CPU:} se fijará el proceso de medición al núcleo
+    lógico 2 mediante \texttt{taskset -c 2}. Esto reduce las migraciones entre
+    núcleos, pero no elimina variaciones de frecuencia, temperatura ni la
+    actividad concurrente del sistema.
+\end{itemize}
+
+\subsection{Datos de entrada}
+
+Se utilizarán \textbf{arreglos de enteros generados artificialmente}.
+Para cada tamaño \(n\) se generarán tres
+arreglos con valores de distribución uniforme en el intervalo
+\([0,10^9]\), utilizando las semillas fijas \textbf{1729, 2718 y 31415}.
+Se registrarán las semillas y los parámetros de generación para reproducir
+las entradas. Sparse Table y Segment Tree recibirán exactamente los mismos
+datos en cada comparación.
+
+\begin{itemize}
+    \item \textbf{Representación de los elementos:} cada entero se asociará
+    con su posición mediante un par \((\text{valor},\text{índice})\).
+    Ambos componentes serán enteros: el dato numérico y su posición.
+    El orden lexicográfico permitirá obtener el índice del mínimo y,
+    ante valores iguales, seleccionar la posición más a la izquierda.
+    La preparación de estos pares quedará fuera del tiempo medido.
+    \item \textbf{Consultas:} para una longitud de rango \(k\), con
+    \(1\leq k\leq n\), se elegirá uniformemente una posición inicial
+    \(L\) entre \(0\) y \(n-k\), y se fijará \(R=L+k-1\).
+    Así, cada consulta corresponderá a un intervalo inclusivo válido
+    \([L,R]\), que se traducirá a \([L,R+1)\) al invocar las
+    implementaciones. Se considerarán distintas longitudes y ambas
+    estructuras responderán la misma secuencia de consultas.
+    \item \textbf{Actualizaciones:} en el escenario dinámico se generará
+    una secuencia reproducible de posiciones elegidas uniformemente entre
+    \(0\) y \(n-1\), permitiendo posiciones repetidas, y nuevos valores
+    del intervalo \([0,10^9]\), distintos del valor vigente.
+    Los cambios se aplicarán en el mismo orden: Segment Tree actualizará
+    la hoja correspondiente y Sparse Table se reconstruirá a partir del
+    arreglo modificado. El índice asociado a cada elemento se conservará.
+    Las consultas posteriores serán iguales para ambas alternativas.
+    \item \textbf{Entradas de validación:} se emplearán, por separado,
+    arreglos pequeños crecientes, decrecientes, con todos sus elementos
+    iguales, con mínimos repetidos y de un solo elemento. Estos casos
+    comprobarán la corrección y el desempate; no constituirán experimentos
+    temporales adicionales.
+\end{itemize}
+
+La generación de los arreglos, las consultas y la secuencia de modificaciones
+se realizará antes del cronometraje. Los tamaños de arreglo, las longitudes
+concretas de los rangos y las cantidades de operaciones se fijarán antes de
+ejecutar los experimentos.
+
+\subsection{Experimentos e hipótesis}
+
+Se compararán Sparse Table y Segment Tree mediante \textbf{cuatro experimentos}:
+construcción inicial y consultas en el escenario estático, y mantenimiento
+y consultas posteriores a modificaciones en el escenario dinámico. Para cada
+entrada se construirán ambas estructuras y se \textbf{reutilizarán las
+instancias} para consultar el arreglo sin cambios. Después se aplicará la
+secuencia de modificaciones: Segment Tree conservará su instancia mediante
+\texttt{update}, mientras que Sparse Table será sustituida por una nueva
+construcción del arreglo vigente. No se reconstruirán estructuras entre
+consultas si no ha ocurrido un cambio.
+
+El cronometraje seguirá el esquema de la plantilla \texttt{uhr}, de Leonardo
+Lovera (LELE), adaptado para usar \texttt{std::chrono::steady\_clock} y
+expresar los tiempos en nanosegundos \cite{lovera-uhr}. Se realizarán
+\textbf{32 repeticiones por configuración y semilla}, después del
+calentamiento. Las consultas estáticas se medirán en lotes calibrados fuera
+de muestra, conservando el tamaño del lote entre repeticiones de una misma
+configuración y método. En el escenario dinámico se respetará la carga fija
+definida a continuación, sin añadir consultas para calibrar el reloj.
+El tiempo de cada lote se dividirá por la cantidad de consultas ejecutadas.
+La construcción y el mantenimiento se expresarán por construcción y por
+modificación, respectivamente, sin mezclarlos con el tiempo de consulta.
+
+La generación de datos, preparación de pares, validación y escritura de
+resultados quedarán fuera del reloj. También se excluirá la destrucción de
+las estructuras, tanto después de construir como al reemplazar Sparse Table;
+en este último caso se cronometrará la creación de la tabla nueva. Los índices
+devueltos se consumirán para evitar que el compilador elimine las consultas.
+La corrección se contrastará con un barrido lineal independiente, fuera de
+los intervalos medidos.
+
+En cada repetición dinámica se partirá del mismo arreglo inicial y se
+reproducirán los mismos cambios y consultas. La restauración del estado y el
+calentamiento quedarán fuera de la muestra; dentro de la secuencia se
+conservarán las instancias y su estado entre operaciones. Los experimentos
+de mantenimiento y consultas dinámicas se distinguirán por sus intervalos
+de cronometraje, sin duplicar una modificación en el mismo recorrido.
+
+Se ejecutarán \textbf{10 ciclos por arreglo, semilla y repetición dinámica}.
+Cada ciclo comenzará con \textbf{una actualización puntual}, seguida de
+\textbf{1.000 consultas}: primero se aplicará \texttt{update} en Segment
+Tree o se reconstruirá Sparse Table y, solo después, se consultará el estado
+vigente. Esto supone \textbf{10 modificaciones y 10.000 consultas medidas por
+estructura en cada repetición dinámica}. Las 1.000 consultas de cada ciclo
+se repartirán equilibradamente entre las longitudes de rango seleccionadas,
+registrando por separado el tiempo y la cantidad de consultas de cada
+longitud. Así se reutilizará cada estado actualizado para todos sus lotes,
+sin multiplicar las reconstrucciones al cambiar la longitud del rango.
+
+No se forzará que las consultas aleatorias incluyan la posición modificada,
+para conservar la distribución de rangos definida. Como comprobación de
+corrección, después del lote se verificará también la posición actualizada
+mediante una consulta unitaria fuera del cronometraje.
+
+Se conservarán muestras crudas y resúmenes CSV con \textbf{media, desviación
+estándar muestral, mínimo, Q1, mediana, Q3 y máximo}, identificando estructura,
+tamaño del arreglo, longitud del rango, semilla, repetición y ciclo cuando
+corresponda. Para resumir el escenario dinámico se obtendrá, en cada
+repetición, el tiempo medio por modificación sobre sus diez ciclos y el
+tiempo por consulta de cada longitud sobre sus lotes. Los ciclos no se
+contarán como repeticiones independientes adicionales. Las figuras
+mostrarán media y barras de una desviación estándar, como en el boletín
+anterior; no se interpretarán como intervalos de confianza. Cada semilla
+conservará su resumen: las repeticiones sobre un mismo arreglo no se tratarán
+como arreglos independientes. Las diferencias se evaluarán junto con su
+dispersión: las 32 repeticiones permiten caracterizar la variabilidad, pero
+no garantizan por sí solas significancia estadística ni una superioridad
+universal a partir de las cotas asintóticas.
+
+Antes de la ejecución oficial se realizará un \textbf{piloto}, especialmente
+con el arreglo de mayor tamaño, para estimar la duración de la matriz
+completa. El presupuesto del conjunto será de \textbf{menos de una hora},
+con una proyección objetivo de \textbf{45 minutos como máximo} y
+\textbf{15 minutos de margen}. La estimación incluirá calentamiento,
+calibración, restauración y destrucción de estructuras, validación, análisis
+de memoria, escritura y generación de gráficos, aunque estas tareas estén
+fuera del cronometraje de las operaciones. Si la proyección supera el
+objetivo, se revisará el tamaño máximo o la cantidad de ciclos dinámicos
+antes de ejecutar, manteniendo las 32 repeticiones y documentando el ajuste.
+No se dará por garantizada la duración hasta comprobarla con el piloto.
+
+\subsubsection{Construcción inicial en el escenario estático}
+
+\begin{itemize}
+    \item \textbf{Variable:} \(n\), cantidad de elementos del arreglo.
+    \item \textbf{Controles:} mismos valores y pares de entrada para ambas
+    estructuras, con las tres semillas definidas. Cada construcción se
+    realizará desde la entrada preparada, sin incluir su generación.
+    \item \textbf{Resultados:} tiempo por construcción frente a \(n\),
+    mediante tablas y gráficos. Las instancias construidas se reutilizarán
+    para las consultas; su costo inicial no se cargará a cada consulta.
+\end{itemize}
+
+\textbf{Hipótesis.} Se espera que Sparse Table tenga mayor tiempo de
+construcción al crecer \(n\), porque prepara una tabla de tamaño
+\(\Theta(n\log n)\), mientras que Segment Tree construye sus nodos en
+\(\Theta(n)\). El preprocesamiento adicional de Sparse Table puede
+compensarse cuando se realizan suficientes consultas estáticas, pero este
+beneficio se estudiará separando ambos costos, no suponiendo que ocurre para
+cualquier cantidad de consultas.
+
+\subsubsection{Consultas en el escenario estático}
+
+\begin{itemize}
+    \item \textbf{Variables:} tamaño del arreglo \(n\) y longitud del
+    rango \(k\). Se variará una manteniendo fija la otra en cada comparación.
+    \item \textbf{Controles:} instancias ya construidas, sin modificaciones
+    del arreglo, y mismos lotes de intervalos aleatorios. Se comparará
+    \texttt{query\_idempotent} de Sparse Table con \texttt{query} de
+    Segment Tree.
+    \item \textbf{Resultados:} tiempo por consulta frente a \(n\) para
+    longitudes fijas y frente a \(k\) para tamaños de arreglo fijos.
+    La construcción inicial quedará excluida de estos tiempos.
+\end{itemize}
+
+\textbf{Hipótesis.} Se espera que Sparse Table tenga menor tiempo por
+consulta al resolver RMQ con dos accesos y una combinación, de costo
+\(\Theta(1)\), aprovechando su preprocesamiento. Segment Tree recorrerá
+los niveles necesarios para descomponer el rango, con peor caso
+\(\Theta(\log n)\). No se presupone una diferencia apreciable para todos
+los rangos: los unitarios son constantes en ambas estructuras, y con \(k\)
+fijo la cota del recorrido del árbol no obliga a crecer con \(n\).
+
+\subsubsection{Mantenimiento en el escenario dinámico}
+
+\begin{itemize}
+    \item \textbf{Variable:} tamaño del arreglo \(n\), bajo modificaciones
+    puntuales de sus valores.
+    \item \textbf{Controles:} mismo estado inicial y misma secuencia de
+    posiciones y nuevos valores. Se realizarán diez ciclos, cada uno con
+    una modificación seguida de 1.000 consultas compartidas entre las
+    longitudes evaluadas. Cada cambio deberá quedar reflejado antes de
+    responderlas; no se agruparán modificaciones para reconstruir
+    Sparse Table una sola vez.
+    \item \textbf{Resultados:} tiempo por modificación frente a \(n\).
+    Se medirá \texttt{update} en Segment Tree y la reconstrucción en
+    Sparse Table, excluyendo las consultas y la construcción inicial.
+\end{itemize}
+
+\textbf{Hipótesis.} Se espera que Segment Tree tenga menor tiempo de
+mantenimiento, ya que actualiza una hoja y sus ancestros en
+\(\Theta(\log n)\), frente a reconstruir Sparse Table en
+\(\Theta(n\log n)\). La diferencia debería aumentar al crecer el
+arreglo. Esta comparación expresa el costo de mantener respuestas correctas
+tras un cambio, no dos operaciones nativas de actualización equivalentes.
+
+\subsubsection{Consultas en el escenario dinámico}
+
+\begin{itemize}
+    \item \textbf{Variables:} tamaño del arreglo \(n\) y longitud del
+    rango \(k\), manteniendo fija una al estudiar la otra.
+    \item \textbf{Controles:} mismos cambios previos y lotes de consultas.
+    Antes de consultar, Segment Tree deberá estar actualizado y Sparse Table
+    reconstruida, de modo que ambas representen el mismo arreglo vigente.
+    Se usarán los lotes de 1.000 consultas de los diez ciclos del experimento
+    de mantenimiento, sin repetir los cambios ni las reconstrucciones para
+    obtener estas mediciones.
+    \item \textbf{Resultados:} tiempo por consulta después de las
+    modificaciones, separado del tiempo de mantenimiento registrado en el
+    experimento anterior. Las respuestas deberán coincidir con el mínimo
+    y el desempate definidos.
+\end{itemize}
+
+\textbf{Hipótesis.} Una vez mantenidas las estructuras, Sparse Table debería
+conservar su ventaja en consultas por su costo \(\Theta(1)\); Segment Tree
+mantiene su cota de peor caso \(\Theta(\log n)\). Por tanto, la ventaja
+esperada de Segment Tree en un entorno con cambios se atribuye al menor costo
+de mantenimiento, no necesariamente a una consulta aislada más rápida.
+Los tiempos pueden diferir de los estáticos por el estado de la caché dejado
+por las actualizaciones o reconstrucciones, sin que cambien estas cotas.
+
+\subsubsection{Análisis del espacio utilizado}
+
+Se analizarán las asignaciones de los constructores para los tamaños de
+arreglo evaluados, considerando el mismo tipo de par en ambas estructuras.
+Se distinguirá el almacenamiento retenido de las reservas temporales de
+construcción o reconstrucción, excluyendo el arreglo externo compartido.
+Cualquier seguimiento de asignaciones se realizará en una pasada separada,
+sin activarlo durante el cronometraje; estos bytes no representan la memoria
+residente total del proceso.
+
+\textbf{Hipótesis.} Sparse Table requerirá más espacio al crecer \(n\),
+por sus \(n(\lfloor\log_2 n\rfloor+1)\) elementos almacenados, frente
+a los \(2n\) de Segment Tree. Las actualizaciones del árbol reutilizan el
+vector existente, mientras que la reconstrucción de la tabla requiere nuevas
+reservas y puede aumentar el pico si coexisten las versiones anterior y nueva.
+Este análisis acompañará los cuatro experimentos temporales, sin constituir
+un quinto experimento de tiempo.
+
+\textit{Parámetros por concretar antes de la ejecución: tamaños de arreglos,
+longitudes de rangos, cantidad de consultas estáticas y criterios de
+calibración de sus lotes. Los diez ciclos dinámicos propuestos quedarán
+sujetos a la validación del presupuesto mediante el piloto, sin reducir
+las 32 repeticiones.}
